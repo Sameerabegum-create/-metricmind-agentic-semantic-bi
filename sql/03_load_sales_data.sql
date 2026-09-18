@@ -1,0 +1,9 @@
+-- MetricMind: Load Superstore sales data
+--
+-- The Superstore CSV was loaded into Snowflake
+-- using the Snowflake table upload interface.
+--
+-- Target table:
+-- METRICMIND.RAW.SALES
+--
+-- Rows loaded: 51,290

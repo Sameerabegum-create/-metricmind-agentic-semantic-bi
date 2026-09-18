@@ -1,0 +1,11 @@
+USE DATABASE METRICMIND;
+USE SCHEMA RAW;
+
+-- Verify total number of records
+SELECT COUNT(*) AS TOTAL_ROWS
+FROM SALES;
+
+-- Preview loaded data
+SELECT *
+FROM SALES
+LIMIT 10;
