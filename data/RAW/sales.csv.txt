@@ -1,0 +1,6 @@
+order_id,order_date,country,state,city,product,revenue,cost
+1001,2026-01-05,India,Uttar Pradesh,Lucknow,Laptop,75000,60000
+1002,2026-01-08,India,Delhi,New Delhi,Monitor,25000,18000
+1003,2026-01-12,India,Maharashtra,Mumbai,Keyboard,5000,3000
+1004,2026-01-18,India,Karnataka,Bangalore,Laptop,80000,65000
+1005,2026-02-02,India,Uttar Pradesh,Noida,Monitor,30000,22000
