@@ -1,0 +1,13 @@
+order_id,order_date,country,state,city,product,revenue,cost
+1001,2026-01-05,India,Uttar Pradesh,Lucknow,Laptop,75000,60000
+1002,2026-01-12,India,Delhi,New Delhi,Mobile,45000,35000
+1003,2026-02-03,India,Maharashtra,Mumbai,Laptop,82000,65000
+1004,2026-02-15,India,Karnataka,Bangalore,Tablet,38000,28000
+1005,2026-03-08,India,Uttar Pradesh,Lucknow,Mobile,52000,40000
+1006,2026-03-21,India,Maharashtra,Pune,Laptop,90000,70000
+1007,2026-04-02,India,Delhi,New Delhi,Tablet,42000,31000
+1008,2026-04-18,India,Karnataka,Bangalore,Mobile,58000,44000
+1009,2026-05-06,India,Uttar Pradesh,Kanpur,Laptop,68000,53000
+1010,2026-05-22,India,Maharashtra,Mumbai,Mobile,61000,47000
+1011,2026-06-10,India,Karnataka,Mysore,Tablet,35000,26000
+1012,2026-06-25,India,Uttar Pradesh,Lucknow,Mobile,55000,42000
