@@ -1,0 +1,48 @@
+cubes:
+  - name: sales
+
+    sql_table: METRICMIND.ANALYTICS.FCT_SALES
+
+    description: "Governed sales metrics for MetricMind"
+
+    measures:
+      - name: revenue
+        sql: sales
+        type: sum
+        description: "Total sales revenue"
+
+      - name: profit
+        sql: profit
+        type: sum
+        description: "Total profit"
+
+      - name: shipping_cost
+        sql: shipping_cost
+        type: sum
+        description: "Total shipping cost"
+
+      - name: profit_margin
+        sql: "100.0 * ${profit} / NULLIF(${revenue}, 0)"
+        type: number
+        description: "Profit margin percentage"
+
+    dimensions:
+      - name: order_date
+        sql: order_date
+        type: time
+        description: "Order date"
+
+      - name: country
+        sql: country
+        type: string
+        description: "Customer country"
+
+      - name: region
+        sql: region
+        type: string
+        description: "Sales region"
+
+      - name: category
+        sql: category
+        type: string
+        description: "Product category"
