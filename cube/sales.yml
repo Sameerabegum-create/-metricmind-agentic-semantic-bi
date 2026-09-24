@@ -46,3 +46,28 @@ cubes:
         sql: category
         type: string
         description: "Product category"
+      
+      - name: market
+        sql: market
+        type: string
+        description: "Sales market"
+
+      - name: state
+        sql: state
+        type: string
+        description: "Customer state"
+
+      - name: city
+        sql: city
+        type: string
+        description: "Customer city"
+
+      - name: sub_category
+        sql: sub_category
+        type: string
+        description: "Product sub-category"
+
+      - name: segment
+        sql: segment
+        type: string
+        description: "Customer segment"
