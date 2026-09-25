@@ -26,6 +26,16 @@ cubes:
         type: number
         description: "Profit margin percentage"
 
+      - name: quantity
+        sql: quantity
+        type: sum
+        description: "Total quantity of products sold"
+
+      - name: discount
+        sql: discount
+        type: sum
+        description: "Total discount amount"
+
     dimensions:
       - name: order_date
         sql: order_date
