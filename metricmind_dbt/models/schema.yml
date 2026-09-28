@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: sales_transformed
+    description: "Cleaned and transformed sales data"
+    columns:
+      - name: order_id
+        description: "Unique identifier for each order"
+        data_tests:
+          - not_null
+          - unique
+
+      - name: order_date
+        description: "Date when the order was placed"
+        data_tests:
+          - not_null
+
+      - name: country
+        description: "Country where the order was placed"
+        data_tests:
+          - not_null
+
+      - name: revenue
+        description: "Revenue generated from the order"
+        data_tests:
+          - not_null
+
+      - name: cost
+        description: "Cost of the order"
+        data_tests:
+          - not_null
+
+  - name: metrics
+    description: "Business metrics calculated from sales data"
+    columns:
+      - name: total_revenue
+        data_tests:
+          - not_null
+
+      - name: total_cost
+        data_tests:
+          - not_null
+
+      - name: total_margin
+        data_tests:
+          - not_null
