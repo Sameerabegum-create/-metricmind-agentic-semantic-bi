@@ -77,6 +77,16 @@ cubes:
         type: string
         description: "Product sub-category"
 
+      - name: product_id
+        sql: product_id
+        type: string
+        description: "Product identifier"
+
+      - name: product_name
+        sql: product_name
+        type: string
+        description: "Product name"
+
       - name: segment
         sql: segment
         type: string
