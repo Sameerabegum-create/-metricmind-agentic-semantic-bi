@@ -52,6 +52,16 @@ cubes:
         type: string
         description: "Sales region"
 
+      - name: state
+        sql: state
+        type: string
+        description: "Sales state"
+
+      - name: city
+        sql: city
+        type: string
+        description: "Sales city"
+
       - name: category
         sql: category
         type: string
