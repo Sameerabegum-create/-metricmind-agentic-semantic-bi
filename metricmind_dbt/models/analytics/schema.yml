@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_sales
+    description: "Fact table containing transformed sales data for MetricMind."
+
+    columns:
+      - name: row_id
+        description: "Unique row identifier for each sales record."
+        tests:
+          - not_null
+          - unique
+
+      - name: order_id
+        description: "Customer order identifier."
+        tests:
+          - not_null
+
+      - name: order_date
+        description: "Date when the order was placed."
+        tests:
+          - not_null
+
+      - name: sales
+        description: "Sales revenue for the order line."
+
+      - name: profit
+        description: "Profit generated from the order line."
+
+      - name: quantity
+        description: "Quantity of products sold."
+
+      - name: country
+        description: "Customer country."
+
+      - name: region
+        description: "Sales region."
+
+      - name: category
+        description: "Product category."
