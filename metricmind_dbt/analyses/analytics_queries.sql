@@ -1,4 +1,4 @@
-Analytics SQL Queries
+-- Analytics SQL Queries
 
 -- 1. Total Revenue
 SELECT
