@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+logs/
+*.log
+
+cube-local/node_modules/
+cube-local/.cubestore/
+cube-local/.env
+cube-local/snowflake.log
