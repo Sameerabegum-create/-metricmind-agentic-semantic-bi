@@ -1,7 +1,7 @@
-﻿import json
+import json
 
 from langchain_ollama import ChatOllama
-from prompts import SYSTEM_PROMPT
+from agent.prompts import SYSTEM_PROMPT
 
 
 llm = ChatOllama(

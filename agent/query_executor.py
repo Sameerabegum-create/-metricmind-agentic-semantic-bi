@@ -1,4 +1,4 @@
-﻿from snowflake_client import query_snowflake
+from agent.snowflake_client import query_snowflake
 
 
 GOVERNED_QUERIES = {
@@ -51,7 +51,7 @@ def execute_metric(metric, market=None):
             f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
         )
 
-    return query_snowflake(query)
+    return {"query": query, **query_snowflake(query)}
 
 
 def execute_margin_analysis(market=None):
@@ -73,7 +73,7 @@ def execute_margin_analysis(market=None):
             f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
         )
 
-    return query_snowflake(query)
+    return {"query": query, **query_snowflake(query)}
 
 
 def execute_cost_analysis(market=None):
@@ -98,7 +98,7 @@ def execute_cost_analysis(market=None):
             f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
         )
 
-    return query_snowflake(query)
+    return {"query": query, **query_snowflake(query)}
 
 
 if __name__ == "__main__":
