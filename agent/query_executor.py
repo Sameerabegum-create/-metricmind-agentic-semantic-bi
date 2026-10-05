@@ -26,15 +26,35 @@ GOVERNED_QUERIES = {
 }
 
 
-def execute_metric(metric):
+def execute_metric(metric, market=None):
     if metric not in GOVERNED_QUERIES:
         raise ValueError(f"Metric is not governed: {metric}")
 
-    return query_snowflake(GOVERNED_QUERIES[metric])
+    query = GOVERNED_QUERIES[metric]
+
+    if market is not None:
+        allowed_markets = {
+            "EU",
+            "US",
+            "APAC",
+            "LATAM",
+            "Africa",
+            "Canada",
+        }
+
+        if market not in allowed_markets:
+            raise ValueError(f"Market is not governed: {market}")
+
+        query = query.replace(
+            "FROM METRICMIND.ANALYTICS.FCT_SALES",
+            f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
+        )
+
+    return query_snowflake(query)
 
 
 if __name__ == "__main__":
-    result = execute_metric("revenue")
+    result = execute_metric("revenue", "EU")
 
     print("Columns:", result["columns"])
     print("Rows:", result["rows"])

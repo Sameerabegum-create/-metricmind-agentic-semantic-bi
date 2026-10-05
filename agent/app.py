@@ -10,13 +10,19 @@ def main():
 
     print("\nUnderstanding your question...")
 
-    metric = plan_query(user_question)
+    plan = plan_query(user_question)
+
+    metric = plan["metric"]
+    market = plan["market"]
 
     print("Governed metric:", metric)
 
+    if market:
+        print("Geography filter:", market)
+
     print("\nQuerying Snowflake...")
 
-    result = execute_metric(metric)
+    result = execute_metric(metric, market)
 
     value = result["rows"][0][0]
 
@@ -24,16 +30,26 @@ def main():
     print("-" * 40)
 
     if metric == "revenue":
-        print(f"Total revenue: ${value:,.2f}")
+        label = "Total revenue"
 
     elif metric == "profit":
-        print(f"Total profit: ${value:,.2f}")
+        label = "Total profit"
 
     elif metric == "profit_margin":
-        print(f"Profit margin: {value:.2f}%")
+        label = "Profit margin"
 
     elif metric == "shipping_cost":
-        print(f"Total shipping cost: ${value:,.2f}")
+        label = "Total shipping cost"
+
+    else:
+        label = metric
+
+    if market:
+        print(f"{label} ({market}): ${value:,.2f}")
+    elif metric == "profit_margin":
+        print(f"{label}: {value:.2f}%")
+    else:
+        print(f"{label}: ${value:,.2f}")
 
     print("-" * 40)
 
