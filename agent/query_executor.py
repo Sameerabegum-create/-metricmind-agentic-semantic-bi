@@ -53,8 +53,39 @@ def execute_metric(metric, market=None):
     return query_snowflake(query)
 
 
+def execute_margin_analysis(market=None):
+    query = """
+        SELECT
+            SUM(SALES) AS REVENUE,
+            SUM(PROFIT) AS PROFIT,
+            100.0 * SUM(PROFIT) / NULLIF(SUM(SALES), 0)
+                AS PROFIT_MARGIN
+        FROM METRICMIND.ANALYTICS.FCT_SALES
+    """
+
+    if market is not None:
+        allowed_markets = {
+            "EU",
+            "US",
+            "APAC",
+            "LATAM",
+            "Africa",
+            "Canada",
+        }
+
+        if market not in allowed_markets:
+            raise ValueError(f"Market is not governed: {market}")
+
+        query = query.replace(
+            "FROM METRICMIND.ANALYTICS.FCT_SALES",
+            f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
+        )
+
+    return query_snowflake(query)
+
+
 if __name__ == "__main__":
-    result = execute_metric("revenue", "EU")
+    result = execute_margin_analysis("EU")
 
     print("Columns:", result["columns"])
     print("Rows:", result["rows"])

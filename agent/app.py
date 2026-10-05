@@ -1,5 +1,5 @@
-from query_planner import plan_query
-from query_executor import execute_metric
+﻿from query_planner import plan_query
+from query_executor import execute_metric, execute_margin_analysis
 
 
 def main():
@@ -22,34 +22,60 @@ def main():
 
     print("\nQuerying Snowflake...")
 
-    result = execute_metric(metric, market)
+    if metric == "profit_margin":
+        result = execute_margin_analysis(market)
 
-    value = result["rows"][0][0]
+        revenue = result["rows"][0][0]
+        profit = result["rows"][0][1]
+        profit_margin = result["rows"][0][2]
 
-    print("\nMetricMind Result:")
-    print("-" * 40)
+        print("\nMetricMind Result:")
+        print("-" * 40)
 
-    if metric == "revenue":
-        label = "Total revenue"
+        if market:
+            print(f"Profit margin ({market}): {profit_margin:.2f}%")
+        else:
+            print(f"Profit margin: {profit_margin:.2f}%")
 
-    elif metric == "profit":
-        label = "Total profit"
+        print("\nReasoning:")
+        print(f"Revenue: ${revenue:,.2f}")
+        print(f"Profit:  ${profit:,.2f}")
 
-    elif metric == "profit_margin":
-        label = "Profit margin"
-
-    elif metric == "shipping_cost":
-        label = "Total shipping cost"
+        print("\nProfit Margin = Profit / Revenue * 100")
+        print(f"              = ${profit:,.2f} / ${revenue:,.2f} * 100")
+        print(f"              = {profit_margin:.2f}%")
 
     else:
-        label = metric
+        result = execute_metric(metric, market)
 
-    if market:
-        print(f"{label} ({market}): ${value:,.2f}")
-    elif metric == "profit_margin":
-        print(f"{label}: {value:.2f}%")
-    else:
-        print(f"{label}: ${value:,.2f}")
+        value = result["rows"][0][0]
+
+        print("\nMetricMind Result:")
+        print("-" * 40)
+
+        if metric == "revenue":
+            label = "Total revenue"
+            print(
+                f"{label} ({market}): ${value:,.2f}"
+                if market
+                else f"{label}: ${value:,.2f}"
+            )
+
+        elif metric == "profit":
+            label = "Total profit"
+            print(
+                f"{label} ({market}): ${value:,.2f}"
+                if market
+                else f"{label}: ${value:,.2f}"
+            )
+
+        elif metric == "shipping_cost":
+            label = "Total shipping cost"
+            print(
+                f"{label} ({market}): ${value:,.2f}"
+                if market
+                else f"{label}: ${value:,.2f}"
+            )
 
     print("-" * 40)
 
