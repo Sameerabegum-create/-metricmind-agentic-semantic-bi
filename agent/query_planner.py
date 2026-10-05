@@ -1,4 +1,4 @@
-import json
+﻿import json
 
 from langchain_ollama import ChatOllama
 from prompts import SYSTEM_PROMPT
@@ -17,9 +17,14 @@ def plan_query(user_question):
             SYSTEM_PROMPT
             + """
 
-Your job is to identify the governed metric and optional geography filter.
+Your job is to identify the governed analysis type, metric, and optional geography filter.
 
-Return ONLY valid JSON.
+Return a JSON object.
+
+Allowed analysis types:
+- metric
+- margin_analysis
+- cost_analysis
 
 Allowed metrics:
 - revenue
@@ -44,28 +49,44 @@ Important:
 - Do not invent database columns.
 - Do not write SQL.
 - If no geography filter is requested, use null.
+- Use analysis_type = "margin_analysis" when the user asks why or how profit margin is calculated.
+- Use analysis_type = "cost_analysis" when the user asks to break down, analyze, or explain costs.
+- Material cost is NOT available in the dataset.
+- Shipping cost IS available in the dataset.
 
 Examples:
 
 User: Show me total revenue
 Response:
-{"metric": "revenue", "market": null}
+{"analysis_type": "metric", "metric": "revenue", "market": null}
 
 User: Show me European sales
 Response:
-{"metric": "revenue", "market": "EU"}
+{"analysis_type": "metric", "metric": "revenue", "market": "EU"}
 
 User: What is the profit in Europe?
 Response:
-{"metric": "profit", "market": "EU"}
+{"analysis_type": "metric", "metric": "profit", "market": "EU"}
 
 User: What is the profit margin for Europe?
 Response:
-{"metric": "profit_margin", "market": "EU"}
+{"analysis_type": "metric", "metric": "profit_margin", "market": "EU"}
+
+User: Why is the profit margin in Europe 12.69%?
+Response:
+{"analysis_type": "margin_analysis", "metric": "profit_margin", "market": "EU"}
 
 User: Show me shipping cost
 Response:
-{"metric": "shipping_cost", "market": null}
+{"analysis_type": "metric", "metric": "shipping_cost", "market": null}
+
+User: Break down the costs in Europe
+Response:
+{"analysis_type": "cost_analysis", "metric": "shipping_cost", "market": "EU"}
+
+User: Analyze shipping costs in Europe
+Response:
+{"analysis_type": "cost_analysis", "metric": "shipping_cost", "market": "EU"}
 """
         ),
         ("human", user_question),
@@ -75,11 +96,22 @@ Response:
 
     content = response.content.strip()
 
-    return json.loads(content)
+    # Extract the JSON object even if Llama adds extra text.
+    start = content.find("{")
+    end = content.rfind("}")
+
+    if start == -1 or end == -1:
+        raise ValueError(
+            f"Llama did not return a valid JSON object: {content}"
+        )
+
+    json_content = content[start:end + 1]
+
+    return json.loads(json_content)
 
 
 if __name__ == "__main__":
-    question = "Show me European sales"
+    question = "Why is the profit margin in Europe 12.69%?"
 
     print("Question:", question)
 

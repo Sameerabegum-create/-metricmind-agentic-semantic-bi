@@ -1,4 +1,4 @@
-from snowflake_client import query_snowflake
+﻿from snowflake_client import query_snowflake
 
 
 GOVERNED_QUERIES = {
@@ -26,6 +26,16 @@ GOVERNED_QUERIES = {
 }
 
 
+ALLOWED_MARKETS = {
+    "EU",
+    "US",
+    "APAC",
+    "LATAM",
+    "Africa",
+    "Canada",
+}
+
+
 def execute_metric(metric, market=None):
     if metric not in GOVERNED_QUERIES:
         raise ValueError(f"Metric is not governed: {metric}")
@@ -33,16 +43,7 @@ def execute_metric(metric, market=None):
     query = GOVERNED_QUERIES[metric]
 
     if market is not None:
-        allowed_markets = {
-            "EU",
-            "US",
-            "APAC",
-            "LATAM",
-            "Africa",
-            "Canada",
-        }
-
-        if market not in allowed_markets:
+        if market not in ALLOWED_MARKETS:
             raise ValueError(f"Market is not governed: {market}")
 
         query = query.replace(
@@ -64,16 +65,32 @@ def execute_margin_analysis(market=None):
     """
 
     if market is not None:
-        allowed_markets = {
-            "EU",
-            "US",
-            "APAC",
-            "LATAM",
-            "Africa",
-            "Canada",
-        }
+        if market not in ALLOWED_MARKETS:
+            raise ValueError(f"Market is not governed: {market}")
 
-        if market not in allowed_markets:
+        query = query.replace(
+            "FROM METRICMIND.ANALYTICS.FCT_SALES",
+            f"FROM METRICMIND.ANALYTICS.FCT_SALES WHERE MARKET = '{market}'"
+        )
+
+    return query_snowflake(query)
+
+
+def execute_cost_analysis(market=None):
+    query = """
+        SELECT
+            SUM(SALES) AS REVENUE,
+            SUM(PROFIT) AS PROFIT,
+            SUM(SHIPPING_COST) AS SHIPPING_COST,
+            100.0 * SUM(PROFIT) / NULLIF(SUM(SALES), 0)
+                AS PROFIT_MARGIN,
+            100.0 * SUM(SHIPPING_COST) / NULLIF(SUM(SALES), 0)
+                AS SHIPPING_COST_PERCENT
+        FROM METRICMIND.ANALYTICS.FCT_SALES
+    """
+
+    if market is not None:
+        if market not in ALLOWED_MARKETS:
             raise ValueError(f"Market is not governed: {market}")
 
         query = query.replace(
@@ -85,7 +102,7 @@ def execute_margin_analysis(market=None):
 
 
 if __name__ == "__main__":
-    result = execute_margin_analysis("EU")
+    result = execute_cost_analysis("EU")
 
     print("Columns:", result["columns"])
     print("Rows:", result["rows"])
