@@ -1,104 +1,218 @@
+"use client";
+
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+
+const salesData = [
+  { month: "Jan", sales: 12000 },
+  { month: "Feb", sales: 18000 },
+  { month: "Mar", sales: 15000 },
+  { month: "Apr", sales: 22000 },
+  { month: "May", sales: 28000 },
+  { month: "Jun", sales: 32000 },
+  { month: "Jul", sales: 30000 },
+  { month: "Aug", sales: 38000 },
+  { month: "Sep", sales: 42000 },
+  { month: "Oct", sales: 39000 },
+  { month: "Nov", sales: 47000 },
+  { month: "Dec", sales: 52000 },
+];
+
+const profitData = [
+  { category: "Technology", profit: 18500 },
+  { category: "Furniture", profit: 12500 },
+  { category: "Office", profit: 9200 },
+  { category: "Supplies", profit: 6800 },
+  { category: "Accessories", profit: 11200 },
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <div className="mx-auto max-w-7xl">
-        
-        {/* Header */}
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            MetricMind
-          </h1>
+    <main className="dashboard">
 
-          <p className="mt-2 text-gray-600">
-            AI-Powered Semantic Business Intelligence
-          </p>
+      {/* SIDEBAR */}
+      <aside className="sidebar">
+        <div className="brand">
+          <h1>MetricMind</h1>
+          <p>Business Intelligence</p>
+        </div>
+
+        <div className="menu-section">
+          <p className="menu-title">MAIN MENU</p>
+
+          <div className="menu-item active">
+            Dashboard
+          </div>
+
+          <div className="menu-item">
+            Analytics
+          </div>
+
+          <div className="menu-item">
+            AI Assistant
+          </div>
+
+          <div className="menu-item">
+            Reports
+          </div>
+        </div>
+
+        <div className="menu-section system">
+          <p className="menu-title">SYSTEM</p>
+
+          <div className="menu-item">
+            Settings
+          </div>
+        </div>
+
+        <div className="profile">
+          N
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <section className="content">
+
+        {/* HEADER */}
+        <header className="header">
+          <div>
+            <h2>Dashboard</h2>
+            <p>Overview of your business performance</p>
+          </div>
+
+          <button className="header-button">
+            MetricMind
+          </button>
         </header>
 
-        {/* Dashboard */}
-        <section>
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">
-            Business Dashboard
-          </h2>
+        {/* KPI CARDS */}
+        <section className="cards">
 
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-            
-            <div className="rounded-xl bg-white p-6 shadow">
-              <p className="text-sm text-gray-500">Total Sales</p>
-              <h3 className="mt-2 text-2xl font-bold">$0</h3>
-            </div>
-
-            <div className="rounded-xl bg-white p-6 shadow">
-              <p className="text-sm text-gray-500">Total Profit</p>
-              <h3 className="mt-2 text-2xl font-bold">$0</h3>
-            </div>
-
-            <div className="rounded-xl bg-white p-6 shadow">
-              <p className="text-sm text-gray-500">Orders</p>
-              <h3 className="mt-2 text-2xl font-bold">0</h3>
-            </div>
-
-            <div className="rounded-xl bg-white p-6 shadow">
-              <p className="text-sm text-gray-500">Customers</p>
-              <h3 className="mt-2 text-2xl font-bold">0</h3>
-            </div>
-
+          <div className="card">
+            <p>Total Sales</p>
+            <h3>$342K</h3>
+            <span>+12.5% from last month</span>
           </div>
 
-          {/* Visualization Area */}
-          <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-            <div className="rounded-xl bg-white p-6 shadow">
-              <h3 className="text-lg font-semibold">
-                Sales Overview
-              </h3>
-
-              <div className="mt-6 flex h-64 items-center justify-center rounded-lg bg-gray-50">
-                <p className="text-gray-500">
-                  Sales chart will appear here
-                </p>
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-white p-6 shadow">
-              <h3 className="text-lg font-semibold">
-                Profit Overview
-              </h3>
-
-              <div className="mt-6 flex h-64 items-center justify-center rounded-lg bg-gray-50">
-                <p className="text-gray-500">
-                  Profit chart will appear here
-                </p>
-              </div>
-            </div>
-
+          <div className="card">
+            <p>Total Profit</p>
+            <h3>$68.2K</h3>
+            <span>+8.4% from last month</span>
           </div>
 
-          {/* AI Query Section */}
-          <div className="mt-6 rounded-xl bg-white p-6 shadow">
-            <h3 className="text-lg font-semibold">
-              Ask MetricMind
-            </h3>
+          <div className="card">
+            <p>Orders</p>
+            <h3>5,009</h3>
+            <span>+6.2% from last month</span>
+          </div>
 
-            <p className="mt-2 text-sm text-gray-500">
-              Ask questions about your business data using natural language.
-            </p>
+          <div className="card">
+            <p>Customers</p>
+            <h3>793</h3>
+            <span>+4.8% from last month</span>
+          </div>
 
-            <div className="mt-4 flex gap-3">
-              <input
-                type="text"
-                placeholder="Example: What were our total sales last month?"
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 outline-none focus:border-gray-500"
-              />
+        </section>
 
-              <button className="rounded-lg bg-black px-6 py-3 font-medium text-white">
-                Ask
-              </button>
+        {/* CHARTS */}
+        <section className="charts">
+
+          {/* SALES CHART */}
+          <div className="chart-card">
+            <h2>Sales Overview</h2>
+
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={salesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+
+                  <XAxis dataKey="month" />
+
+                  <YAxis />
+
+                  <Tooltip
+                    formatter={(value) =>
+                      `$${Number(value).toLocaleString()}`
+                    }
+                  />
+
+                  <Line
+                    type="monotone"
+                    dataKey="sales"
+                    stroke="#2867e8"
+                    strokeWidth={4}
+                    dot={{
+                      r: 5,
+                      fill: "#ffffff",
+                      stroke: "#2867e8",
+                      strokeWidth: 3,
+                    }}
+                    activeDot={{ r: 7 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* PROFIT CHART */}
+          <div className="chart-card">
+            <h2>Profit Overview</h2>
+
+            <div className="chart-container">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={profitData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+
+                  <XAxis dataKey="category" />
+
+                  <YAxis />
+
+                  <Tooltip
+                    formatter={(value) =>
+                      `$${Number(value).toLocaleString()}`
+                    }
+                  />
+
+                  <Bar
+                    dataKey="profit"
+                    fill="#117d78"
+                    radius={[7, 7, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
         </section>
-      </div>
+
+        {/* ASK METRICMIND */}
+        <section className="ask-card">
+          <h2>Ask MetricMind</h2>
+
+          <p>
+            Ask questions about your business data using natural language.
+          </p>
+
+          <div className="ask-input">
+            <input
+              type="text"
+              placeholder="Ask something like: What were our best selling products?"
+            />
+
+            <button>Ask</button>
+          </div>
+        </section>
+
+      </section>
     </main>
   );
 }
