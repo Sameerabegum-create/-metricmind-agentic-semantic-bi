@@ -62,9 +62,9 @@ export default function Home() {
             AI Assistant
           </div>
 
-          <div className="menu-item">
-            Reports
-          </div>
+          <Link href="/reports" className="menu-item">
+          Reports
+        </Link>
         </div>
 
         <div className="menu-section system">
