@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 
 import {
   BarChart,
@@ -53,9 +54,9 @@ export default function Home() {
             Dashboard
           </div>
 
-          <div className="menu-item">
+          <Link href="/analytics" className="menu-item">
             Analytics
-          </div>
+          </Link>
 
           <div className="menu-item">
             AI Assistant
