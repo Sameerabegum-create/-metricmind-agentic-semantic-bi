@@ -56,11 +56,11 @@ export default function Home() {
 
           <Link href="/analytics" className="menu-item">
             Analytics
-          </Link>
-
-          <div className="menu-item">
-            AI Assistant
-          </div>
+          
+  </Link>
+          <Link href="/ai-assistant" className="menu-item">
+  AI Assistant
+</Link>
 
           <Link href="/reports" className="menu-item">
           Reports
