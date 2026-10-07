@@ -66,6 +66,9 @@ export default function Home() {
           Reports
         </Link>
         </div>
+        <Link href="/data-explorer" className="menu-item">
+  Data Explorer
+</Link>
 
         <div className="menu-section system">
           <p className="menu-title">SYSTEM</p>
