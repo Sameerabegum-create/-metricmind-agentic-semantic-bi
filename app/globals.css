@@ -1154,3 +1154,34 @@ body {
     padding-right: 20px;
   }
 }
+.sql-preview,
+.api-preview {
+  margin-top: 18px;
+  padding: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+
+.sql-preview h3,
+.api-preview h3 {
+  margin: 0 0 12px;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sql-preview pre,
+.api-preview pre {
+  margin: 0;
+  padding: 16px;
+  background: #111827;
+  color: #e5e7eb;
+  border-radius: 8px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}

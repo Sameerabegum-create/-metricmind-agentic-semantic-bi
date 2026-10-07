@@ -5,10 +5,15 @@ import { useState } from "react";
 export default function AIAssistantPage() {
     const [question, setQuestion] = useState("");
     const [submittedQuestion, setSubmittedQuestion] = useState("");
+    const [showSQL, setShowSQL] = useState(false);
+    const [showAPI, setShowAPI] = useState(false);
 
     const handleAsk = () => {
     if (!question.trim()) return;
+
     setSubmittedQuestion(question);
+    setShowSQL(false);
+    setShowAPI(false);
     };
 
     return (
@@ -105,9 +110,54 @@ export default function AIAssistantPage() {
                 </div>
 
                 <div className="ai-actions">
-                <button>View SQL</button>
-                <button>View API Call</button>
+                <button onClick={() => setShowSQL(!showSQL)}>
+                    {showSQL ? "Hide SQL" : "View SQL"}
+                </button>
+
+                <button onClick={() => setShowAPI(!showAPI)}>
+                    {showAPI ? "Hide API Call" : "View API Call"}
+                </button>
                 </div>
+
+                {showSQL && (
+                <div className="sql-preview">
+                    <h3>Generated SQL</h3>
+
+                    <pre>
+{`SELECT
+    region,
+    SUM(sales) AS revenue,
+    SUM(profit) AS profit,
+    (SUM(profit) / NULLIF(SUM(sales), 0)) * 100 AS profit_margin
+FROM sales
+WHERE region = 'Europe'
+GROUP BY region;`}
+                    </pre>
+                </div>
+                )}
+
+                {showAPI && (
+                <div className="api-preview">
+                    <h3>API Request</h3>
+
+                    <pre>
+{`POST /api/ask
+
+{
+    "question": "Why did European margins drop last quarter?",
+    "metrics": [
+    "revenue",
+    "profit",
+    "profit_margin"
+    ],
+    "filters": {
+    "region": "Europe",
+    "period": "last_quarter"
+    }
+}`}
+                    </pre>
+                </div>
+                )}
             </div>
             </div>
         )}
