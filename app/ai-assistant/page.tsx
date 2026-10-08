@@ -3,6 +3,76 @@
 import { useState } from "react";
 import DynamicChart from "../../components/DynamicChart";
 import type { ChartConfig } from "../../components/chartTypes";
+import { sampleChartResponse } from "../../components/sampleChartResponse";
+
+type AIResponse = {
+    answer: string;
+    insights: {
+    label: string;
+    value: string;
+    }[];
+    chart: ChartConfig;
+};
+
+const responses: Record<string, AIResponse> = {
+    "Why did European margins drop last quarter?": {
+    answer:
+        "European performance declined mainly because revenue and profit decreased during the previous quarter, resulting in a lower profit margin.",
+    insights: [
+        { label: "Revenue", value: "↓ 8.4%" },
+        { label: "Profit", value: "↓ 12.1%" },
+        { label: "Profit Margin", value: "↓ 3.7%" },
+    ],
+    chart: {
+        ...sampleChartResponse,
+        chart_type: "line",
+        title: "European Revenue & Profit Trend",
+    },
+    },
+
+    "Which category generated the highest profit?": {
+    answer:
+        "Technology generated the highest profit among the available product categories, outperforming Furniture and Office Supplies.",
+    insights: [
+        { label: "Top Category", value: "Technology" },
+        { label: "Profit", value: "$42K" },
+        { label: "Share of Profit", value: "47.8%" },
+    ],
+    chart: {
+        chart_type: "bar",
+        title: "Profit by Category",
+        x_axis: "category",
+        metrics: ["profit"],
+        data: [
+        { category: "Technology", profit: 42000 },
+        { category: "Furniture", profit: 16500 },
+        { category: "Office Supplies", profit: 30200 },
+        ],
+    },
+    },
+
+    "What were our top performing regions?": {
+    answer:
+        "The West region was the strongest performer, followed by the East and Central regions based on overall revenue performance.",
+    insights: [
+        { label: "Top Region", value: "West" },
+        { label: "Revenue", value: "$145K" },
+        { label: "Profit", value: "$28.5K" },
+    ],
+    chart: {
+        chart_type: "bar",
+        title: "Revenue & Profit by Region",
+        x_axis: "region",
+        metrics: ["revenue", "profit"],
+        data: [
+        { region: "West", revenue: 145000, profit: 28500 },
+        { region: "East", revenue: 132000, profit: 24800 },
+        { region: "Central", revenue: 98000, profit: 17600 },
+        { region: "South", revenue: 76000, profit: 13900 },
+        ],
+    },
+    },
+};
 
 export default function AIAssistantPage() {
     const [question, setQuestion] = useState("");
@@ -10,20 +80,14 @@ export default function AIAssistantPage() {
     const [showSQL, setShowSQL] = useState(false);
     const [showAPI, setShowAPI] = useState(false);
     const [chartType, setChartType] = useState<"line" | "bar">("line");
+
+    const selectedResponse =
+    responses[submittedQuestion] || responses["Why did European margins drop last quarter?"];
+
     const chartConfig: ChartConfig = {
+    ...selectedResponse.chart,
     chart_type: chartType,
-    title: "Revenue & Profit Trend",
-    x_axis: "month",
-    metrics: ["revenue", "profit"],
-    data: [
-    { month: "Jan", revenue: 42000, profit: 8500 },
-    { month: "Feb", revenue: 48000, profit: 10200 },
-    { month: "Mar", revenue: 45000, profit: 9100 },
-    { month: "Apr", revenue: 52000, profit: 11800 },
-    { month: "May", revenue: 49000, profit: 10500 },
-    { month: "Jun", revenue: 41000, profit: 8200 },
-    ],
-};
+    };
 
     const handleAsk = () => {
     if (!question.trim()) return;
@@ -31,6 +95,12 @@ export default function AIAssistantPage() {
     setSubmittedQuestion(question);
     setShowSQL(false);
     setShowAPI(false);
+
+    const response =
+        responses[question] ||
+        responses["Why did European margins drop last quarter?"];
+
+    setChartType(response.chart.chart_type);
     };
 
     return (
@@ -90,55 +160,51 @@ export default function AIAssistantPage() {
             <div className="ai-answer">
                 <span>MetricMind AI</span>
 
-                <p>
-                Based on the available business data, the selected region
-                experienced a decline in profit margin during the previous
-                quarter.
-                </p>
+                <p>{selectedResponse.answer}</p>
 
                 <div className="ai-insight-cards">
-                <div>
-                    <span>Revenue</span>
-                    <strong>↓ 8.4%</strong>
-                </div>
-
-                <div>
-                    <span>Profit</span>
-                    <strong>↓ 12.1%</strong>
-                </div>
-
-                <div>
-                    <span>Profit Margin</span>
-                    <strong>↓ 3.7%</strong>
-                </div>
+                {selectedResponse.insights.map((insight) => (
+                    <div key={insight.label}>
+                    <span>{insight.label}</span>
+                    <strong>{insight.value}</strong>
+                    </div>
+                ))}
                 </div>
 
                 <div className="ai-dynamic-chart">
-    <div className="chart-controls">
-    <button
-        onClick={() => setChartType("line")}
-        className={chartType === "line" ? "chart-button active" : "chart-button"}
-    >
-        Line Chart
-    </button>
+                <div className="chart-controls">
+                    <button
+                    onClick={() => setChartType("line")}
+                    className={
+                        chartType === "line"
+                        ? "chart-button active"
+                        : "chart-button"
+                    }
+                    >
+                    Line Chart
+                    </button>
 
-    <button
-        onClick={() => setChartType("bar")}
-        className={chartType === "bar" ? "chart-button active" : "chart-button"}
-    >
-        Bar Chart
-    </button>
-    </div>
+                    <button
+                    onClick={() => setChartType("bar")}
+                    className={
+                        chartType === "bar"
+                        ? "chart-button active"
+                        : "chart-button"
+                    }
+                    >
+                    Bar Chart
+                    </button>
+                </div>
 
-    <DynamicChart
-    type={chartConfig.chart_type}
-    data={chartConfig.data}
-    xKey={chartConfig.x_axis}
-    yKeys={chartConfig.metrics}
-   
-    title={chartConfig.title}
-/>
-</div>
+                <DynamicChart
+                    type={chartConfig.chart_type}
+                    data={chartConfig.data}
+                    xKey={chartConfig.x_axis}
+                    yKeys={chartConfig.metrics}
+                    title={chartConfig.title}
+                />
+                </div>
+
                 <div className="ai-actions">
                 <button onClick={() => setShowSQL(!showSQL)}>
                     {showSQL ? "Hide SQL" : "View SQL"}
@@ -174,16 +240,12 @@ GROUP BY region;`}
 {`POST /api/ask
 
 {
-    "question": "Why did European margins drop last quarter?",
+    "question": "${submittedQuestion}",
     "metrics": [
     "revenue",
     "profit",
     "profit_margin"
-    ],
-    "filters": {
-    "region": "Europe",
-    "period": "last_quarter"
-    }
+    ]
 }`}
                     </pre>
                 </div>
