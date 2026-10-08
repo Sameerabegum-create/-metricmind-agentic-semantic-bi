@@ -20,6 +20,21 @@ models:
         data_tests:
           - not_null
 
+      - name: state
+        description: "State where the order was placed"
+        data_tests:
+          - not_null
+
+      - name: city
+        description: "City where the order was placed"
+        data_tests:
+          - not_null
+
+      - name: product
+        description: "Product associated with the order"
+        data_tests:
+          - not_null
+
       - name: revenue
         description: "Revenue generated from the order"
         data_tests:
@@ -27,6 +42,11 @@ models:
 
       - name: cost
         description: "Cost of the order"
+        data_tests:
+          - not_null
+
+      - name: margin
+        description: "Profit margin calculated as revenue minus cost"
         data_tests:
           - not_null
 
