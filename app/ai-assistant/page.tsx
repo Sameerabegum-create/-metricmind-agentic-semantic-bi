@@ -1,12 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import DynamicChart from "../../components/DynamicChart";
+import type { ChartConfig } from "../../components/chartTypes";
 
 export default function AIAssistantPage() {
     const [question, setQuestion] = useState("");
     const [submittedQuestion, setSubmittedQuestion] = useState("");
     const [showSQL, setShowSQL] = useState(false);
     const [showAPI, setShowAPI] = useState(false);
+    const [chartType, setChartType] = useState<"line" | "bar">("line");
+    const chartConfig: ChartConfig = {
+    chart_type: chartType,
+    title: "Revenue & Profit Trend",
+    x_axis: "month",
+    metrics: ["revenue", "profit"],
+    data: [
+    { month: "Jan", revenue: 42000, profit: 8500 },
+    { month: "Feb", revenue: 48000, profit: 10200 },
+    { month: "Mar", revenue: 45000, profit: 9100 },
+    { month: "Apr", revenue: 52000, profit: 11800 },
+    { month: "May", revenue: 49000, profit: 10500 },
+    { month: "Jun", revenue: 41000, profit: 8200 },
+    ],
+};
 
     const handleAsk = () => {
     if (!question.trim()) return;
@@ -96,19 +113,32 @@ export default function AIAssistantPage() {
                 </div>
                 </div>
 
-                <div className="ai-chart-placeholder">
-                <div className="chart-title">Revenue & Profit Trend</div>
+                <div className="ai-dynamic-chart">
+    <div className="chart-controls">
+    <button
+        onClick={() => setChartType("line")}
+        className={chartType === "line" ? "chart-button active" : "chart-button"}
+    >
+        Line Chart
+    </button>
 
-                <div className="chart-bars">
-                    <div style={{ height: "55%" }}></div>
-                    <div style={{ height: "70%" }}></div>
-                    <div style={{ height: "45%" }}></div>
-                    <div style={{ height: "80%" }}></div>
-                    <div style={{ height: "60%" }}></div>
-                    <div style={{ height: "38%" }}></div>
-                </div>
-                </div>
+    <button
+        onClick={() => setChartType("bar")}
+        className={chartType === "bar" ? "chart-button active" : "chart-button"}
+    >
+        Bar Chart
+    </button>
+    </div>
 
+    <DynamicChart
+    type={chartConfig.chart_type}
+    data={chartConfig.data}
+    xKey={chartConfig.x_axis}
+    yKeys={chartConfig.metrics}
+   
+    title={chartConfig.title}
+/>
+</div>
                 <div className="ai-actions">
                 <button onClick={() => setShowSQL(!showSQL)}>
                     {showSQL ? "Hide SQL" : "View SQL"}
