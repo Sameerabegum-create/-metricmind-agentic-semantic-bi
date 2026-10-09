@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -12,6 +13,12 @@ type AIResponse = {
     value: string;
     }[];
     chart: ChartConfig;
+};
+
+type ChatMessage = {
+    id: number;
+    question: string;
+    response: AIResponse;
 };
 
 const responses: Record<string, AIResponse> = {
@@ -32,7 +39,7 @@ const responses: Record<string, AIResponse> = {
 
     "Which category generated the highest profit?": {
     answer:
-        "Technology generated the highest profit among the available product categories, outperforming Furniture and Office Supplies.",
+        "Technology generated the highest profit among the available product categories in this sample response.",
     insights: [
         { label: "Top Category", value: "Technology" },
         { label: "Profit", value: "$42K" },
@@ -53,7 +60,7 @@ const responses: Record<string, AIResponse> = {
 
     "What were our top performing regions?": {
     answer:
-        "The West region was the strongest performer, followed by the East and Central regions based on overall revenue performance.",
+        "West is the leading region in this sample response, followed by East, Central, and South based on revenue.",
     insights: [
         { label: "Top Region", value: "West" },
         { label: "Revenue", value: "$145K" },
@@ -69,38 +76,76 @@ const responses: Record<string, AIResponse> = {
         { region: "East", revenue: 132000, profit: 24800 },
         { region: "Central", revenue: 98000, profit: 17600 },
         { region: "South", revenue: 76000, profit: 13900 },
-        ],
+      ],
     },
-    },
+  },
 };
+
+const defaultQuestion = "Why did European margins drop last quarter?";
+
+function getResponse(question: string): AIResponse {
+    const exactMatch = responses[question];
+
+    if (exactMatch) {
+    return exactMatch;
+    }
+
+    return {
+    answer:
+        "This is a frontend demonstration. I can currently show sample insights for the three example questions above. A real answer to other questions requires connecting the interface to the project’s AI service later.",
+    insights: [
+        { label: "Response Type", value: "Demo" },
+        { label: "Data Source", value: "Sample Data" },
+        { label: "Backend", value: "Not Connected" },
+    ],
+    chart: {
+        ...sampleChartResponse,
+        title: "Sample Revenue & Profit Trend",
+    },
+    };
+}
 
 export default function AIAssistantPage() {
     const [question, setQuestion] = useState("");
-    const [submittedQuestion, setSubmittedQuestion] = useState("");
-    const [showSQL, setShowSQL] = useState(false);
-    const [showAPI, setShowAPI] = useState(false);
-    const [chartType, setChartType] = useState<"line" | "bar">("line");
-
-    const selectedResponse =
-    responses[submittedQuestion] || responses["Why did European margins drop last quarter?"];
-
-    const chartConfig: ChartConfig = {
-    ...selectedResponse.chart,
-    chart_type: chartType,
-    };
+    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [showSQL, setShowSQL] = useState<number | null>(null);
+    const [showAPI, setShowAPI] = useState<number | null>(null);
+    const [chartTypes, setChartTypes] = useState<Record<number, "line" | "bar">>(
+    {}
+    );
 
     const handleAsk = () => {
-    if (!question.trim()) return;
+    const trimmedQuestion = question.trim();
 
-    setSubmittedQuestion(question);
-    setShowSQL(false);
-    setShowAPI(false);
+    if (!trimmedQuestion) return;
 
-    const response =
-        responses[question] ||
-        responses["Why did European margins drop last quarter?"];
+    const response = getResponse(trimmedQuestion);
+    const messageId = Date.now();
 
-    setChartType(response.chart.chart_type);
+    setMessages((previous) => [
+        ...previous,
+        {
+        id: messageId,
+        question: trimmedQuestion,
+        response,
+        },
+    ]);
+
+    setChartTypes((previous) => ({
+        ...previous,
+        [messageId]: response.chart.chart_type,
+    }));
+
+    setQuestion("");
+    setShowSQL(null);
+    setShowAPI(null);
+    };
+
+    const handleClearChat = () => {
+    setMessages([]);
+    setShowSQL(null);
+    setShowAPI(null);
+    setChartTypes({});
     };
 
     return (
@@ -110,6 +155,12 @@ export default function AIAssistantPage() {
             <h1>AI Assistant</h1>
             <p>Ask questions about your business data in natural language.</p>
         </div>
+
+        {messages.length > 0 && (
+            <button className="chat-clear-button" onClick={handleClearChat}>
+            Clear conversation
+            </button>
+        )}
         </div>
 
         <div className="ai-chat-container">
@@ -119,17 +170,13 @@ export default function AIAssistantPage() {
             <h2>Ask MetricMind</h2>
 
             <p>
-            Ask a business question and MetricMind will help you understand
-            your data.
+            Ask a business question and explore sample insights and
+            visualizations.
             </p>
 
             <div className="example-questions">
-            <button
-                onClick={() =>
-                setQuestion("Why did European margins drop last quarter?")
-                }
-            >
-                Why did European margins drop last quarter?
+            <button onClick={() => setQuestion(defaultQuestion)}>
+                {defaultQuestion}
             </button>
 
             <button
@@ -150,119 +197,174 @@ export default function AIAssistantPage() {
             </div>
         </div>
 
-        {submittedQuestion && (
-            <div className="ai-response">
-            <div className="user-question">
-                <span>You</span>
-                <p>{submittedQuestion}</p>
+        {messages.length > 0 && (
+            <div className="conversation-summary">
+            <span>
+                Conversation history: {messages.length}{" "}
+                {messages.length === 1 ? "question" : "questions"}
+            </span>
             </div>
+        )}
 
-            <div className="ai-answer">
-                <span>MetricMind AI</span>
+        {messages.map((message, index) => {
+            const chartType =
+            chartTypes[message.id] || message.response.chart.chart_type;
 
-                <p>{selectedResponse.answer}</p>
+            const chartConfig: ChartConfig = {
+            ...message.response.chart,
+            chart_type: chartType,
+            };
+
+            return (
+            <div className="ai-response" key={message.id}>
+                <div className="user-question">
+                <span>You · Question {index + 1}</span>
+                <p>{message.question}</p>
+                </div>
+
+                <div className="ai-answer">
+                <span>MetricMind AI · Sample Response</span>
+                <p>{message.response.answer}</p>
 
                 <div className="ai-insight-cards">
-                {selectedResponse.insights.map((insight) => (
+                    {message.response.insights.map((insight) => (
                     <div key={insight.label}>
-                    <span>{insight.label}</span>
-                    <strong>{insight.value}</strong>
+                        <span>{insight.label}</span>
+                        <strong>{insight.value}</strong>
                     </div>
-                ))}
+                    ))}
                 </div>
 
                 <div className="ai-dynamic-chart">
-                <div className="chart-controls">
+                    <div className="chart-controls">
                     <button
-                    onClick={() => setChartType("line")}
-                    className={
+                        onClick={() =>
+                        setChartTypes((previous) => ({
+                            ...previous,
+                            [message.id]: "line",
+                        }))
+                        }
+                        className={
                         chartType === "line"
-                        ? "chart-button active"
-                        : "chart-button"
-                    }
+                            ? "chart-button active"
+                            : "chart-button"
+                        }
                     >
-                    Line Chart
+                        Line Chart
                     </button>
 
                     <button
-                    onClick={() => setChartType("bar")}
-                    className={
+                        onClick={() =>
+                        setChartTypes((previous) => ({
+                            ...previous,
+                            [message.id]: "bar",
+                        }))
+                        }
+                        className={
                         chartType === "bar"
-                        ? "chart-button active"
-                        : "chart-button"
-                    }
+                            ? "chart-button active"
+                            : "chart-button"
+                        }
                     >
-                    Bar Chart
+                        Bar Chart
                     </button>
-                </div>
+                    </div>
 
-                <DynamicChart
+                    <DynamicChart
                     type={chartConfig.chart_type}
                     data={chartConfig.data}
                     xKey={chartConfig.x_axis}
                     yKeys={chartConfig.metrics}
                     title={chartConfig.title}
-                />
+                    />
                 </div>
 
                 <div className="ai-actions">
-                <button onClick={() => setShowSQL(!showSQL)}>
-                    {showSQL ? "Hide SQL" : "View SQL"}
-                </button>
+                    <button
+                    onClick={() =>
+                        setShowSQL((current) =>
+                        current === message.id ? null : message.id
+                        )
+                    }
+                    >
+                    {showSQL === message.id ? "Hide SQL" : "View SQL"}
+                    </button>
 
-                <button onClick={() => setShowAPI(!showAPI)}>
-                    {showAPI ? "Hide API Call" : "View API Call"}
-                </button>
+                    <button
+                    onClick={() =>
+                        setShowAPI((current) =>
+                        current === message.id ? null : message.id
+                        )
+                    }
+                    >
+                    {showAPI === message.id ? "Hide API Call" : "View API Call"}
+                    </button>
                 </div>
 
-                {showSQL && (
-                <div className="sql-preview">
-                    <h3>Generated SQL</h3>
-
+                {showSQL === message.id && (
+                    <div className="sql-preview">
+                    <h3>Sample SQL Preview</h3>
                     <pre>
 {`SELECT
     region,
     SUM(sales) AS revenue,
-    SUM(profit) AS profit,
-    (SUM(profit) / NULLIF(SUM(sales), 0)) * 100 AS profit_margin
+    SUM(profit) AS profit
 FROM sales
-WHERE region = 'Europe'
-GROUP BY region;`}
+GROUP BY region
+ORDER BY revenue DESC;`}
                     </pre>
-                </div>
+                    </div>
                 )}
 
-                {showAPI && (
-                <div className="api-preview">
-                    <h3>API Request</h3>
-
+                {showAPI === message.id && (
+                    <div className="api-preview">
+                    <h3>Illustrative API Request</h3>
                     <pre>
-{`POST /api/ask
-
-{
-    "question": "${submittedQuestion}",
-    "metrics": [
-    "revenue",
-    "profit",
-    "profit_margin"
-    ]
-}`}
+{JSON.stringify(
+    {
+    question: message.question,
+    demo: true,
+    metrics: message.response.chart.metrics,
+    },
+    null,
+    2
+)}
                     </pre>
-                </div>
+                    <p>
+                        This is a frontend preview only. No API request is sent.
+                    </p>
+                    </div>
                 )}
+                </div>
             </div>
-            </div>
-        )}
+            );
+        })}
 
         <div className="ai-input-area">
             <textarea
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(event) => setQuestion(event.target.value)}
+            onKeyDown={(event) => {
+                if (
+                event.key === "Enter" &&
+                !event.shiftKey &&
+                !event.nativeEvent.isComposing
+                ) {
+                event.preventDefault();
+                handleAsk();
+                }
+            }}
             placeholder="Ask a question about your business data..."
             rows={3}
             />
 
-            <button onClick={handleAsk}>Ask MetricMind</button>
+            <button onClick={handleAsk} disabled={!question.trim()}>
+            Ask MetricMind
+            </button>
+
+            <p className="chat-input-hint">
+            Press Enter to ask · Shift + Enter for a new line
+            </p>
         </div>
         </div>
     </div>
