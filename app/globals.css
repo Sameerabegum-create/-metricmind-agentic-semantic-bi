@@ -1252,3 +1252,149 @@ body {
   color: #6b7280;
   font-size: 12px;
 }
+
+/* AI Assistant chat interface improvements */
+.chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chat-message-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.chat-message-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chat-message-heading strong {
+  color: #1f2937;
+  font-size: 13px;
+}
+
+.chat-avatar {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.user-avatar {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+
+.ai-avatar {
+  background: #4f46e5;
+  color: #ffffff;
+  font-size: 18px;
+}
+
+.chat-timestamp {
+  color: #9ca3af;
+  font-size: 11px;
+}
+
+.question-number {
+  margin-left: auto;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.demo-label {
+  margin-left: auto;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.chat-history .user-question {
+  padding: 18px;
+  border: 1px solid #e0e7ff;
+  border-radius: 14px;
+  background: #f8faff;
+}
+
+.chat-history .user-question p {
+  margin: 0;
+  color: #1f2937;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.chat-history .ai-answer {
+  margin-top: 14px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, 0.035);
+}
+
+.chat-history .ai-answer > p {
+  color: #374151;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.chat-clear-button {
+  padding: 9px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chat-clear-button:hover {
+  background: #f3f4f6;
+}
+
+.conversation-summary {
+  margin: 18px 0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chat-input-hint {
+  margin: 8px 0 0;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .chat-history .ai-answer,
+  .chat-history .user-question {
+    padding: 14px;
+  }
+
+  .question-number,
+  .demo-label {
+    margin-left: 0;
+  }
+
+  .chat-message-heading {
+    align-items: flex-start;
+  }
+}
