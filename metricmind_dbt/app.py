@@ -1,10 +1,48 @@
 ﻿import streamlit as st
 import pandas as pd
+import requests
 
 st.set_page_config(page_title="MetricMind BI", page_icon="📊", layout="wide")
 
 st.title("📊 MetricMind — Agentic Semantic BI")
 st.caption("Sales Analytics Dashboard | Powered by Python, Streamlit, dbt and DuckDB")
+
+st.subheader("🔌 Backend API Status")
+
+try:
+    response = requests.get("http://127.0.0.1:8000/health", timeout=3)
+    if response.ok:
+        st.success("Backend API: Connected")
+    else:
+        st.warning("Backend API: Not responding correctly")
+except requests.RequestException:
+    st.warning("Backend API is offline. Start the FastAPI server to use this feature.")
+
+st.subheader("💬 Ask MetricMind")
+
+question = st.text_input(
+    "Ask about your sales data",
+    placeholder="Example: What is total revenue?"
+)
+
+if st.button("Ask"):
+    if question.strip():
+        try:
+            response = requests.get(
+                "http://127.0.0.1:8000/ask",
+                params={"question": question},
+                timeout=10
+            )
+            if response.ok:
+                result = response.json()
+                st.info(str(result.get("answer", result)))
+            else:
+                st.error(response.json().get("detail", "Could not answer that question."))
+        except requests.RequestException:
+            st.error("Could not connect to the backend. Check that the API server is running.")
+    else:
+        st.warning("Please enter a question.")
+
 
 @st.cache_data
 def load_data():
