@@ -35,6 +35,16 @@ cubes:
         sql: discount
         type: sum
         description: "Total discount amount"
+      
+      - name: order_count
+        sql: order_id
+        type: count_distinct
+        description: "Number of distinct orders"
+
+      - name: average_order_value
+        sql: "1.0 * ${revenue} / NULLIF(${order_count}, 0)"
+        type: number
+        description: "Average revenue per distinct order"
 
     dimensions:
       - name: order_date
