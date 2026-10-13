@@ -79,6 +79,7 @@ def sales_by_country():
     return result.to_dict(orient="records")
 
 
+
 @app.get("/ask")
 def ask(question: str):
     df = load_sales()
@@ -87,22 +88,27 @@ def ask(question: str):
     if not q:
         raise HTTPException(status_code=400, detail="Please enter a question.")
 
-    if "revenue" in q and ("product" in q or "highest" in q or "most" in q):
-        result = df.groupby("product")["revenue"].sum().sort_values(ascending=False)
-        product = result.index[0]
-        return {
-            "question": question,
-            "answer": f"{product} has the highest revenue: {result.iloc[0]:,.2f}.",
-            "source": "sales.csv",
-        }
+    if "highest" in q or "most" in q:
+        if "profit" in q or "margin" in q:
+            result = df.groupby("product")["margin"].sum()
+            product = result.idxmax()
+            return {
+                "question": question,
+                "answer": f"{product} has the highest profit: {result.max():,.2f}.",
+                "source": "sales.csv",
+            }
+        if "revenue" in q:
+            result = df.groupby("product")["revenue"].sum()
+            product = result.idxmax()
+            return {
+                "question": question,
+                "answer": f"{product} has the highest revenue: {result.max():,.2f}.",
+                "source": "sales.csv",
+            }
 
-    if "revenue" in q and ("country" in q or "countries" in q):
-        result = df.groupby("country")["revenue"].sum().sort_values(ascending=False)
-        return {
-            "question": question,
-            "answer": result.to_dict(),
-            "source": "sales.csv",
-        }
+    if "country" in q and "revenue" in q:
+        result = df.groupby("country")["revenue"].sum().to_dict()
+        return {"question": question, "answer": result, "source": "sales.csv"}
 
     if "revenue" in q:
         return {
@@ -114,7 +120,7 @@ def ask(question: str):
     if "profit" in q or "margin" in q:
         return {
             "question": question,
-            "answer": f"Total profit/margin is {df['margin'].sum():,.2f}.",
+            "answer": f"Total profit is {df['margin'].sum():,.2f}.",
             "source": "sales.csv",
         }
 
@@ -125,14 +131,14 @@ def ask(question: str):
             "source": "sales.csv",
         }
 
-    if "order" in q or "record" in q:
+    if "order" in q:
         return {
             "question": question,
-            "answer": f"The dataset contains {df['order_id'].nunique()} unique orders.",
+            "answer": f"Total unique orders: {df['order_id'].nunique()}.",
             "source": "sales.csv",
         }
 
     raise HTTPException(
         status_code=400,
-        detail="Try asking about revenue, profit, cost, orders, or revenue by product/country.",
+        detail="Try asking about revenue, profit, cost, orders, or highest-revenue/profit product.",
     )
