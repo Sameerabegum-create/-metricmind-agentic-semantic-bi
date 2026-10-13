@@ -1,0 +1,21 @@
+date,region,country,product,category,revenue,cost
+2026-01-12,Europe,Germany,Laptop Pro,Electronics,130000,82000
+2026-01-23,Europe,France,Phone X,Electronics,112000,61000
+2026-02-04,North America,United States,Desk Oak,Furniture,28000,16000
+2026-02-15,Asia,India,Office Chair,Furniture,19500,11200
+2026-03-03,Europe,Germany,Monitor 4K,Electronics,45000,29000
+2026-03-18,North America,Canada,Tablet Air,Electronics,67000,41000
+2026-04-07,Asia,India,Bookshelf,Furniture,12500,6800
+2026-04-22,Europe,France,Wireless Mouse,Accessories,8400,3100
+2026-05-09,North America,United States,Keyboard Pro,Accessories,14800,6200
+2026-05-26,Asia,Japan,Laptop Pro,Electronics,98000,64000
+2026-06-11,Europe,Germany,Office Chair,Furniture,21500,12300
+2026-06-27,North America,Canada,Monitor 4K,Electronics,53000,34000
+2026-07-05,Asia,India,Phone X,Electronics,87000,48000
+2026-07-19,Europe,France,Desk Oak,Furniture,32000,18500
+2026-08-02,North America,United States,Wireless Mouse,Accessories,11200,4200
+2026-08-17,Asia,Japan,Keyboard Pro,Accessories,16200,6900
+2026-09-04,Europe,Germany,Tablet Air,Electronics,61000,38500
+2026-09-21,North America,Canada,Bookshelf,Furniture,13900,7400
+2026-10-02,Asia,India,Monitor 4K,Electronics,49000,31000
+2026-10-09,Europe,France,Laptop Pro,Electronics,121000,77000

@@ -1,166 +1,260 @@
+
 "use client";
 
-const reports = [
-    {
-    name: "Sales Performance Report",
-    description:
-        "Overview of revenue, sales trends and sales performance.",
-    type: "Sales",
-    updated: "Today",
-    },
-    {
-    name: "Profit Analysis Report",
-    description:
-        "Detailed analysis of profit, profit margin and performance.",
-    type: "Finance",
-    updated: "Today",
-    },
-    {
-    name: "Regional Performance Report",
-    description:
-        "Compare revenue and profit across different regions.",
-    type: "Regional",
-    updated: "Yesterday",
-    },
-    {
-    name: "Category Performance Report",
-    description:
-        "Analyze product category revenue and profitability.",
-    type: "Category",
-    updated: "Yesterday",
-    },
-];
+import { useEffect, useState } from "react";
+import { apiRequest } from "../../lib/api";
+
+type Report = {
+    id: string;
+    title: string;
+    summary: string;
+    rows: Record<string, string | number>[];
+};
+
+type ReportsResponse = {
+    reports: Report[];
+    data_source?: string;
+};
 
 export default function ReportsPage() {
+    const [reports, setReports] = useState<Report[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [filter, setFilter] = useState("All Reports");
+    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
+    useEffect(() => {
+        apiRequest<ReportsResponse>("/api/reports")
+            .then((response) => {
+                setReports(response.reports ?? []);
+                setError("");
+            })
+            .catch(() => {
+                setError(
+                    "Could not load reports. Check whether the backend is running."
+                );
+            })
+            .finally(() => setLoading(false));
+    }, []);
+
+    const getReportType = (report: Report) => {
+        if (report.id.includes("region")) return "Regional";
+        if (report.id.includes("category")) return "Category";
+        if (report.id.includes("profit")) return "Finance";
+        return "Sales";
+    };
+
+    const visibleReports =
+        filter === "All Reports"
+            ? reports
+            : reports.filter((report) => getReportType(report) === filter);
+
+    const salesCount = reports.filter(
+        (report) => getReportType(report) === "Sales"
+    ).length;
+
+    const financeCount = reports.filter(
+        (report) => getReportType(report) === "Finance"
+    ).length;
+
     return (
-    <main className="reports-page">
-        <header className="reports-header">
-        <div>
-            <p className="reports-brand">MetricMind</p>
-
-            <h1>Reports</h1>
-
-            <p>
-            Generate, view and manage your business intelligence reports.
-            </p>
-        </div>
-
-        <button className="generate-button">
-            + Generate Report
-        </button>
-        </header>
-
-        <section className="reports-summary">
-        <div className="report-summary-card">
-            <span>Total Reports</span>
-            <strong>12</strong>
-            <small>Available reports</small>
-        </div>
-
-        <div className="report-summary-card">
-            <span>Sales Reports</span>
-            <strong>4</strong>
-            <small>Sales performance</small>
-        </div>
-
-        <div className="report-summary-card">
-            <span>Finance Reports</span>
-            <strong>3</strong>
-            <small>Profit and revenue</small>
-        </div>
-
-        <div className="report-summary-card">
-            <span>Recent Reports</span>
-            <strong>5</strong>
-            <small>Updated recently</small>
-        </div>
-        </section>
-
-        <section className="reports-panel">
-        <div className="reports-panel-header">
-            <div>
-            <h2>Available Reports</h2>
-
-            <p>
-                Select a report to view its business insights.
-            </p>
-            </div>
-
-            <select className="report-filter">
-            <option>All Reports</option>
-            <option>Sales</option>
-            <option>Finance</option>
-            <option>Regional</option>
-            <option>Category</option>
-            </select>
-        </div>
-
-        <div className="reports-list">
-            {reports.map((report) => (
-            <div className="report-row" key={report.name}>
-                <div className="report-icon">
-                📊
+        <main className="reports-page">
+            <header className="reports-header">
+                <div>
+                    <p className="reports-brand">MetricMind</p>
+                    <h1>Reports</h1>
+                    <p>
+                        Generate, view and manage your business intelligence reports.
+                    </p>
                 </div>
 
-                <div className="report-info">
-                <h3>{report.name}</h3>
-
-                <p>{report.description}</p>
-                </div>
-
-                <div className="report-type">
-                {report.type}
-                </div>
-
-                <div className="report-updated">
-                {report.updated}
-                </div>
-
-                <button className="view-report-button">
-                View Report
+                <button
+                    className="generate-button"
+                    onClick={() => {
+                        if (reports.length > 0) {
+                            setSelectedReport(reports[0]);
+                        }
+                    }}
+                >
+                    + Generate Report
                 </button>
-            </div>
-            ))}
-        </div>
-        </section>
+            </header>
 
-        <section className="quick-reports">
-        <div className="quick-report-card">
-            <div className="quick-icon">📈</div>
+            {loading && <p>Loading reports from backend...</p>}
+            {error && <p role="alert">{error}</p>}
 
-            <h3>Sales Report</h3>
+            <section className="reports-summary">
+                <div className="report-summary-card">
+                    <span>Total Reports</span>
+                    <strong>{reports.length}</strong>
+                    <small>Available reports</small>
+                </div>
 
-            <p>
-            Review sales trends and revenue performance.
-            </p>
+                <div className="report-summary-card">
+                    <span>Sales Reports</span>
+                    <strong>{salesCount}</strong>
+                    <small>Sales performance</small>
+                </div>
 
-            <button>Open Report</button>
-        </div>
+                <div className="report-summary-card">
+                    <span>Finance Reports</span>
+                    <strong>{financeCount}</strong>
+                    <small>Profit and revenue</small>
+                </div>
 
-        <div className="quick-report-card">
-            <div className="quick-icon">💰</div>
+                <div className="report-summary-card">
+                    <span>Recent Reports</span>
+                    <strong>{reports.length}</strong>
+                    <small>Available from backend</small>
+                </div>
+            </section>
 
-            <h3>Profit Report</h3>
+            <section className="reports-panel">
+                <div className="reports-panel-header">
+                    <div>
+                        <h2>Available Reports</h2>
+                        <p>Select a report to view its business insights.</p>
+                    </div>
 
-            <p>
-            Analyze profit and profit margin performance.
-            </p>
+                    <select
+                        className="report-filter"
+                        value={filter}
+                        onChange={(event) => setFilter(event.target.value)}
+                    >
+                        <option>All Reports</option>
+                        <option>Sales</option>
+                        <option>Finance</option>
+                        <option>Regional</option>
+                        <option>Category</option>
+                    </select>
+                </div>
 
-            <button>Open Report</button>
-        </div>
+                <div className="reports-list">
+                    {visibleReports.map((report) => (
+                        <div className="report-row" key={report.id}>
+                            <div className="report-icon">📊</div>
 
-        <div className="quick-report-card">
-            <div className="quick-icon">🌎</div>
+                            <div className="report-info">
+                                <h3>{report.title}</h3>
+                                <p>{report.summary}</p>
+                            </div>
 
-            <h3>Regional Report</h3>
+                            <div className="report-type">
+                                {getReportType(report)}
+                            </div>
 
-        <p>
-            Compare business performance across regions.
-            </p>
+                            <div className="report-updated">Backend data</div>
 
-            <button>Open Report</button>
-        </div>
-        </section>
-    </main>
+                            <button
+                                className="view-report-button"
+                                onClick={() => setSelectedReport(report)}
+                            >
+                                View Report
+                            </button>
+                        </div>
+                    ))}
+
+                    {!loading && !error && visibleReports.length === 0 && (
+                        <div className="no-data">No reports found.</div>
+                    )}
+                </div>
+            </section>
+
+            <section className="quick-reports">
+                {[
+                    {
+                        icon: "📈",
+                        name: "Sales Report",
+                        description: "Review sales trends and revenue performance.",
+                        type: "Sales",
+                    },
+                    {
+                        icon: "💰",
+                        name: "Profit Report",
+                        description: "Analyze profit and profit margin performance.",
+                        type: "Finance",
+                    },
+                    {
+                        icon: "🌎",
+                        name: "Regional Report",
+                        description: "Compare business performance across regions.",
+                        type: "Regional",
+                    },
+                ].map((item) => (
+                    <div className="quick-report-card" key={item.name}>
+                        <div className="quick-icon">{item.icon}</div>
+                        <h3>{item.name}</h3>
+                        <p>{item.description}</p>
+
+                        <button
+                            onClick={() => {
+                                const match = reports.find(
+                                    (report) => getReportType(report) === item.type
+                                );
+
+                                if (match) setSelectedReport(match);
+                            }}
+                        >
+                            Open Report
+                        </button>
+                    </div>
+                ))}
+            </section>
+
+            {selectedReport && (
+                <div
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={selectedReport.title}
+                    className="reports-panel"
+                >
+                    <div className="reports-panel-header">
+                        <div>
+                            <h2>{selectedReport.title}</h2>
+                            <p>{selectedReport.summary}</p>
+                            <p>
+                                Report type: {getReportType(selectedReport)}
+                            </p>
+                        </div>
+
+                        <button onClick={() => setSelectedReport(null)}>
+                            Close
+                        </button>
+                    </div>
+
+                    <div className="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    {selectedReport.rows.length > 0 &&
+                                        Object.keys(selectedReport.rows[0]).map(
+                                            (column) => (
+                                                <th key={column}>{column}</th>
+                                            )
+                                        )}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {selectedReport.rows.map((row, index) => (
+                                    <tr key={index}>
+                                        {Object.entries(row).map(([key, value]) => (
+                                            <td key={key}>
+                                                {typeof value === "number"
+                                                    ? value.toLocaleString()
+                                                    : value}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+
+                        {selectedReport.rows.length === 0 && (
+                            <p>No rows available for this report.</p>
+                        )}
+                    </div>
+                </div>
+            )}
+        </main>
     );
 }

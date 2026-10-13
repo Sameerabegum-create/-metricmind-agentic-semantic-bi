@@ -1,8 +1,9 @@
 
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { apiRequest } from "../lib/api";
 
 import {
   BarChart,
@@ -18,70 +19,131 @@ import {
 
 type DateRange = "7" | "30" | "90";
 
-const salesData = [
-  { month: "Jan", sales: 12000, profit: 2400, orders: 180, customers: 95 },
-  { month: "Feb", sales: 18000, profit: 3600, orders: 220, customers: 120 },
-  { month: "Mar", sales: 15000, profit: 2900, orders: 205, customers: 110 },
-  { month: "Apr", sales: 22000, profit: 4300, orders: 260, customers: 145 },
-  { month: "May", sales: 28000, profit: 5600, orders: 310, customers: 170 },
-  { month: "Jun", sales: 32000, profit: 6400, orders: 350, customers: 190 },
-  { month: "Jul", sales: 30000, profit: 5900, orders: 330, customers: 180 },
-  { month: "Aug", sales: 38000, profit: 7600, orders: 390, customers: 215 },
-  { month: "Sep", sales: 42000, profit: 8400, orders: 420, customers: 235 },
-  { month: "Oct", sales: 39000, profit: 7800, orders: 405, customers: 220 },
-  { month: "Nov", sales: 47000, profit: 9400, orders: 470, customers: 260 },
-  { month: "Dec", sales: 52000, profit: 10400, orders: 510, customers: 290 },
-];
+type TrendItem = {
+  date?: string;
+  month?: string;
+  period?: string;
+  revenue?: number;
+  sales?: number;
+  profit?: number;
+  orders?: number;
+};
 
-const profitData = [
-  { category: "Technology", profit: 18500 },
-  { category: "Furniture", profit: 12500 },
-  { category: "Office", profit: 9200 },
-  { category: "Supplies", profit: 6800 },
-  { category: "Accessories", profit: 11200 },
-];
+type DashboardResponse = {
+  period_days: number;
+  currency: string;
+  kpis: {
+    revenue: number;
+    profit: number;
+    orders: number;
+    customers: number;
+    profit_margin_pct: number;
+  };
+  trend: TrendItem[];
+  data_source: string;
+};
 
-const rangeConfig: Record<
-  DateRange,
-  { label: string; months: number; factor: number }
-> = {
-  "7": { label: "Last 7 Days", months: 3, factor: 0.08 },
-  "30": { label: "Last 30 Days", months: 6, factor: 0.25 },
-  "90": { label: "Last 90 Days", months: 12, factor: 1 },
+type AnalyticsResponse = {
+  by_category: {
+    category: string;
+    revenue: number;
+    profit: number;
+  }[];
+};
+
+const rangeConfig: Record<DateRange, { label: string }> = {
+  "7": { label: "Last 7 Days" },
+  "30": { label: "Last 30 Days" },
+  "90": { label: "Last 90 Days" },
 };
 
 export default function Home() {
   const [dateRange, setDateRange] = useState<DateRange>("90");
+  const [backendData, setBackendData] =
+    useState<DashboardResponse | null>(null);
+  const [profitData, setProfitData] = useState<
+    AnalyticsResponse["by_category"]
+  >([]);
+  const [loading, setLoading] = useState(true);
+  const [backendError, setBackendError] = useState("");
 
-  const filteredSales = useMemo(() => {
-    const config = rangeConfig[dateRange];
-    return salesData.slice(-config.months);
-  }, [dateRange]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const filteredProfit = useMemo(() => {
-    const factor = rangeConfig[dateRange].factor;
-    return profitData.map((item) => ({
-      ...item,
-      profit: Math.round(item.profit * factor),
-    }));
-  }, [dateRange]);
+    async function loadDashboard() {
+      setLoading(true);
+      setBackendError("");
 
-  const totals = useMemo(() => {
-    const factor = rangeConfig[dateRange].factor;
-    const sales = Math.round(342000 * factor);
-    const profit = Math.round(68200 * factor);
-    const orders = Math.round(5009 * factor);
-    const customers = Math.round(793 * factor);
+      try {
+        const [dashboard, analytics] = await Promise.all([
+          apiRequest<DashboardResponse>(
+            `/api/dashboard?days=${dateRange}`
+          ),
+          apiRequest<AnalyticsResponse>("/api/analytics"),
+        ]);
 
-    return { sales, profit, orders, customers };
+        if (!cancelled) {
+          setBackendData(dashboard);
+          setProfitData(
+            Array.isArray(analytics.by_category)
+              ? analytics.by_category
+              : []
+          );
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setBackendError(
+            error instanceof Error
+              ? error.message
+              : "Could not connect to the backend."
+          );
+          setBackendData(null);
+          setProfitData([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadDashboard();
+
+    return () => {
+      cancelled = true;
+    };
   }, [dateRange]);
 
   const currency = (value: number) =>
-    `$${value.toLocaleString("en-US")}`;
+    `$${value.toLocaleString("en-US", {
+      maximumFractionDigits: 2,
+    })}`;
+
+  const totals = backendData?.kpis;
+
+  // Build chart labels even when the API omits a date field.
+  const salesChartData = (backendData?.trend ?? []).map(
+    (item, index) => {
+      const label =
+        item.date ??
+        item.month ??
+        item.period ??
+        `Record ${index + 1}`;
+
+      return {
+        date: label,
+        sales:
+          typeof item.revenue === "number"
+            ? item.revenue
+            : typeof item.sales === "number"
+              ? item.sales
+              : 0,
+      };
+    }
+  );
 
   return (
     <main className="dashboard">
-      {/* SIDEBAR */}
       <aside className="sidebar">
         <div className="brand">
           <h1>MetricMind</h1>
@@ -90,7 +152,6 @@ export default function Home() {
 
         <div className="menu-section">
           <p className="menu-title">MAIN MENU</p>
-
           <div className="menu-item active">Dashboard</div>
 
           <Link href="/analytics" className="menu-item">
@@ -118,9 +179,7 @@ export default function Home() {
         <div className="profile">N</div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <section className="content">
-        {/* HEADER */}
         <header className="header">
           <div>
             <h2>Dashboard</h2>
@@ -130,14 +189,16 @@ export default function Home() {
           <button className="header-button">MetricMind</button>
         </header>
 
-        {/* DATE RANGE FILTER */}
         <section className="dashboard-filter">
           <div>
             <h3>Performance Overview</h3>
-            <p>Choose a period to update the dashboard sample data.</p>
+            <p>Select a period to load sales data from the backend.</p>
           </div>
 
-          <div className="date-range-options" aria-label="Dashboard date range">
+          <div
+            className="date-range-options"
+            aria-label="Dashboard date range"
+          >
             {(["7", "30", "90"] as DateRange[]).map((range) => (
               <button
                 key={range}
@@ -156,64 +217,92 @@ export default function Home() {
           </div>
         </section>
 
-        {/* KPI CARDS */}
+        {backendError && (
+          <p role="alert" className="error-message">
+            Backend connection failed: {backendError}
+          </p>
+        )}
+
+        {loading && (
+          <p role="status">Loading dashboard data...</p>
+        )}
+
+        {!loading && !backendError && salesChartData.length === 0 && (
+          <p role="status">
+            No sales trend data was returned for this period.
+          </p>
+        )}
+
         <section className="cards">
           <div className="card">
             <p>Total Sales</p>
-            <h3>{currency(totals.sales)}</h3>
-            <span>{rangeConfig[dateRange].label} · Sample data</span>
+            <h3>{totals ? currency(totals.revenue) : "—"}</h3>
+            <span>
+              {rangeConfig[dateRange].label} ·{" "}
+              {backendData ? "Backend data" : "Waiting for data"}
+            </span>
           </div>
 
           <div className="card">
             <p>Total Profit</p>
-            <h3>{currency(totals.profit)}</h3>
-            <span>{rangeConfig[dateRange].label} · Sample data</span>
+            <h3>{totals ? currency(totals.profit) : "—"}</h3>
+            <span>
+              {rangeConfig[dateRange].label} ·{" "}
+              {backendData ? "Backend data" : "Waiting for data"}
+            </span>
           </div>
 
           <div className="card">
             <p>Orders</p>
-            <h3>{totals.orders.toLocaleString("en-US")}</h3>
-            <span>{rangeConfig[dateRange].label} · Sample data</span>
+            <h3>
+              {totals ? totals.orders.toLocaleString("en-US") : "—"}
+            </h3>
+            <span>
+              {rangeConfig[dateRange].label} ·{" "}
+              {backendData ? "Backend data" : "Waiting for data"}
+            </span>
           </div>
 
           <div className="card">
             <p>Customers</p>
-            <h3>{totals.customers.toLocaleString("en-US")}</h3>
-            <span>{rangeConfig[dateRange].label} · Sample data</span>
+            <h3>
+              {totals ? totals.customers.toLocaleString("en-US") : "—"}
+            </h3>
+            <span>
+              {rangeConfig[dateRange].label} ·{" "}
+              {backendData ? "Backend data" : "Waiting for data"}
+            </span>
           </div>
         </section>
 
-        {/* CHARTS */}
         <section className="charts">
           <div className="chart-card">
             <h2>Sales Overview</h2>
 
             <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={filteredSales}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value) =>
-                      currency(Number(value))
-                    }
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="sales"
-                    stroke="#2867e8"
-                    strokeWidth={4}
-                    dot={{
-                      r: 5,
-                      fill: "#ffffff",
-                      stroke: "#2867e8",
-                      strokeWidth: 3,
-                    }}
-                    activeDot={{ r: 7 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {salesChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={salesChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value) => currency(Number(value))}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="sales"
+                      name="Sales"
+                      stroke="#2867e8"
+                      strokeWidth={4}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p>No sales data available for this period.</p>
+              )}
             </div>
           </div>
 
@@ -221,31 +310,32 @@ export default function Home() {
             <h2>Profit Overview</h2>
 
             <div className="chart-container">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={filteredProfit}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="category" />
-                  <YAxis />
-                  <Tooltip
-                    formatter={(value) =>
-                      currency(Number(value))
-                    }
-                  />
-                  <Bar
-                    dataKey="profit"
-                    fill="#117d78"
-                    radius={[7, 7, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {profitData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={profitData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="category" />
+                    <YAxis />
+                    <Tooltip
+                      formatter={(value) => currency(Number(value))}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      name="Profit"
+                      fill="#117d78"
+                      radius={[7, 7, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p>No profit data available.</p>
+              )}
             </div>
           </div>
         </section>
 
-        {/* ASK METRICMIND */}
         <section className="ask-card">
           <h2>Ask MetricMind</h2>
-
           <p>
             Ask questions about your business data using natural language.
           </p>
@@ -253,7 +343,7 @@ export default function Home() {
           <div className="ask-input">
             <input
               type="text"
-              placeholder="Ask something like: What were our best selling products?"
+              placeholder="Ask about sales, profit, categories, or regions..."
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
                   window.location.href = "/ai-assistant";

@@ -5,13 +5,16 @@ import { useState } from "react";
 import DynamicChart from "../../components/DynamicChart";
 import type { ChartConfig } from "../../components/chartTypes";
 import { sampleChartResponse } from "../../components/sampleChartResponse";
+import { apiRequest } from "../../lib/api";
+
+type Insight = {
+    label: string;
+    value: string;
+};
 
 type AIResponse = {
     answer: string;
-    insights: {
-    label: string;
-    value: string;
-    }[];
+    insights: Insight[];
     chart: ChartConfig;
 };
 
@@ -22,86 +25,173 @@ type ChatMessage = {
     timestamp: string;
 };
 
-const responses: Record<string, AIResponse> = {
-    "Why did European margins drop last quarter?": {
-    answer:
-        "European performance declined mainly because revenue and profit decreased during the previous quarter, resulting in a lower profit margin.",
-    insights: [
-        { label: "Revenue", value: "↓ 8.4%" },
-        { label: "Profit", value: "↓ 12.1%" },
-        { label: "Profit Margin", value: "↓ 3.7%" },
-    ],
-    chart: {
-        ...sampleChartResponse,
-        chart_type: "line",
-        title: "European Revenue & Profit Trend",
-    },
-    },
-
-    "Which category generated the highest profit?": {
-    answer:
-        "Technology generated the highest profit among the categories in this sample response.",
-    insights: [
-        { label: "Top Category", value: "Technology" },
-        { label: "Profit", value: "$42K" },
-        { label: "Share of Profit", value: "47.8%" },
-    ],
-    chart: {
-        chart_type: "bar",
-        title: "Profit by Category",
-        x_axis: "category",
-        metrics: ["profit"],
-        data: [
-        { category: "Technology", profit: 42000 },
-        { category: "Furniture", profit: 16500 },
-        { category: "Office Supplies", profit: 30200 },
-        ],
-    },
-    },
-
-    "What were our top performing regions?": {
-    answer:
-        "West is the leading region in this sample response, followed by East, Central, and South based on revenue.",
-    insights: [
-        { label: "Top Region", value: "West" },
-        { label: "Revenue", value: "$145K" },
-        { label: "Profit", value: "$28.5K" },
-    ],
-    chart: {
-        chart_type: "bar",
-        title: "Revenue & Profit by Region",
-        x_axis: "region",
-        metrics: ["revenue", "profit"],
-        data: [
-        { region: "West", revenue: 145000, profit: 28500 },
-        { region: "East", revenue: 132000, profit: 24800 },
-        { region: "Central", revenue: 98000, profit: 17600 },
-        { region: "South", revenue: 76000, profit: 13900 },
-        ],
-    },
-    },
+type ChatAPIResponse = {
+    answer?: string;
+    response?: string;
+    message?: string;
+    insights?: {
+    label?: string;
+    value?: string | number | null;
+    }[];
+    chart?: Partial<ChartConfig>;
+    sql?: string;
+    data_source?: string;
 };
 
 const defaultQuestion = "Why did European margins drop last quarter?";
 
-function getResponse(question: string): AIResponse {
-    const exactMatch = responses[question];
+function formatMoney(value: number): string {
+    return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+    });
+}
 
-    if (exactMatch) return exactMatch;
+function buildResponse(
+    data: ChatAPIResponse,
+    question: string
+): AIResponse {
+    const answerValue = data.answer ?? data.response ?? data.message;
 
-    return {
-    answer:
-        "This is a frontend demonstration. Try one of the example questions to explore the available sample insights and visualizations. A real answer to other questions requires connecting to the project's AI service.",
-    insights: [
-        { label: "Response Type", value: "Demo" },
-        { label: "Data Source", value: "Sample Data" },
-        { label: "Backend", value: "Not Connected" },
-    ],
-    chart: {
-        ...sampleChartResponse,
-        title: "Sample Revenue & Profit Trend",
-    },
+    const answer =
+    typeof answerValue === "string" && answerValue.trim()
+        ? answerValue
+        : "The backend returned data, but no answer text was provided.";
+
+    const rawChart = data.chart;
+
+    const chart: ChartConfig = {
+    ...sampleChartResponse,
+    ...(rawChart ?? {}),
+    chart_type:
+        rawChart?.chart_type === "line" || rawChart?.chart_type === "bar"
+        ? rawChart.chart_type
+        : sampleChartResponse.chart_type,
+    title:
+    typeof rawChart?.title === "string" && rawChart.title.trim()
+        ? rawChart.title
+        : sampleChartResponse.title,
+    x_axis:
+        typeof rawChart?.x_axis === "string" && rawChart.x_axis.trim()
+        ? rawChart.x_axis
+        : sampleChartResponse.x_axis,
+    metrics:
+        Array.isArray(rawChart?.metrics) && rawChart.metrics.length > 0
+        ? rawChart.metrics
+        : sampleChartResponse.metrics,
+    data:
+        Array.isArray(rawChart?.data) && rawChart.data.length > 0
+        ? rawChart.data
+        : sampleChartResponse.data,
     };
+
+    const questionLower = question.toLowerCase();
+    const isCategoryQuestion = questionLower.includes("categor");
+    const isRegionQuestion =
+    questionLower.includes("region") ||
+    questionLower.includes("country") ||
+    questionLower.includes("european");
+
+    const xKey = chart.x_axis.toLowerCase();
+
+    const isGroupedChart =
+    isCategoryQuestion || isRegionQuestion
+        ? chart.data.some((row) =>
+            Object.keys(row).some(
+            (key) =>
+                key.toLowerCase() ===
+                (isCategoryQuestion ? "category" : "region")
+            )
+        )
+        : false;
+
+    const groupKey = isCategoryQuestion ? "category" : "region";
+
+    const matchingGroup = isGroupedChart
+    ? chart.data.find((row) => {
+        const groupValue = row[groupKey];
+        return (
+            typeof groupValue === "string" &&
+            answer.toLowerCase().includes(groupValue.toLowerCase())
+        );
+        })
+    : undefined;
+
+    const backendInsights = Array.isArray(data.insights)
+    ? data.insights
+    : [];
+
+    function getMetric(label: string): string {
+    const key = label.toLowerCase();
+
+    if (matchingGroup) {
+        const value = matchingGroup[key];
+
+        if (typeof value === "number") {
+        return formatMoney(value);
+        }
+
+        if (typeof value === "string" && value.trim()) {
+        return value;
+        }
+    }
+
+    const insight = backendInsights.find((item) =>
+        item.label?.toLowerCase().includes(key)
+    );
+
+    if (insight?.value !== null && insight?.value !== undefined) {
+        const value = insight.value;
+
+        if (typeof value === "number") {
+        return formatMoney(value);
+        }
+
+        return String(value);
+    }
+
+    // Do not invent a group-specific value when the API did not provide it.
+    if (isGroupedChart && (key === "revenue" || key === "profit")) {
+        return "See chart";
+    }
+
+    const matchingValues = chart.data
+        .map((row) => row[key])
+        .filter((value): value is number => typeof value === "number");
+
+    if (matchingValues.length > 0) {
+        const total = matchingValues.reduce((sum, value) => sum + value, 0);
+        return formatMoney(total);
+    }
+
+    return "Not available";
+    }
+
+    const insights: Insight[] = [
+    {
+        label: matchingGroup
+        ? `${String(matchingGroup[groupKey])} Revenue`
+        : "Revenue",
+        value: getMetric("revenue"),
+    },
+    {
+        label: matchingGroup
+        ? `${String(matchingGroup[groupKey])} Profit`
+        : "Profit",
+        value: getMetric("profit"),
+    },
+    {
+        label: "Data Source",
+        value: data.data_source ?? "Backend",
+    },
+    ];
+
+  // Avoid an unused variable while keeping chart-axis matching explicit.
+    void xKey;
+
+    return { answer, insights, chart };
 }
 
 export default function AIAssistantPage() {
@@ -109,49 +199,81 @@ export default function AIAssistantPage() {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [showSQL, setShowSQL] = useState<number | null>(null);
     const [showAPI, setShowAPI] = useState<number | null>(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const [chartTypes, setChartTypes] = useState<
     Record<number, "line" | "bar">
     >({});
+    const [sqlResponses, setSqlResponses] = useState<Record<number, string>>({});
 
-    const handleAsk = () => {
+    async function handleAsk() {
     const trimmedQuestion = question.trim();
 
-    if (!trimmedQuestion) return;
+    if (!trimmedQuestion || loading) return;
 
-    const response = getResponse(trimmedQuestion);
-    const messageId = Date.now();
+    setLoading(true);
+    setError("");
+    setQuestion("");
 
-    const timestamp = new Date().toLocaleTimeString([], {
+    try {
+        const data = await apiRequest<ChatAPIResponse>("/api/chat", {
+        method: "POST",
+        body: JSON.stringify({ question: trimmedQuestion }),
+        });
+
+        const response = buildResponse(data, trimmedQuestion);
+        const messageId = Date.now();
+
+        const timestamp = new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
-    });
+        });
 
-    setMessages((previous) => [
+        setMessages((previous) => [
         ...previous,
         {
-        id: messageId,
-        question: trimmedQuestion,
-        response,
-        timestamp,
+            id: messageId,
+            question: trimmedQuestion,
+            response,
+            timestamp,
         },
     ]);
 
-    setChartTypes((previous) => ({
+        setChartTypes((previous) => ({
         ...previous,
         [messageId]: response.chart.chart_type,
-    }));
+        }));
 
-    setQuestion("");
-    setShowSQL(null);
-    setShowAPI(null);
-    };
+        setSqlResponses((previous) => {
+        if (typeof data.sql === "string" && data.sql.trim()) {
+            return { ...previous, [messageId]: data.sql };
+        }
 
-    const handleClearChat = () => {
+        return previous;
+        });
+
+        setShowSQL(null);
+        setShowAPI(null);
+    } catch (err) {
+        setError(
+        err instanceof Error
+            ? `Could not load the backend response: ${err.message}`
+            : "Could not contact the backend. Check that it is running."
+        );
+        setQuestion(trimmedQuestion);
+    } finally {
+        setLoading(false);
+    }
+    }
+
+    function handleClearChat() {
     setMessages([]);
     setShowSQL(null);
     setShowAPI(null);
     setChartTypes({});
-    };
+    setSqlResponses({});
+    setError("");
+    }
 
     return (
     <div className="ai-assistant-page">
@@ -162,7 +284,10 @@ export default function AIAssistantPage() {
         </div>
 
         {messages.length > 0 && (
-            <button className="chat-clear-button" onClick={handleClearChat}>
+            <button
+            className="chat-clear-button"
+            onClick={handleClearChat}
+            >
             Clear conversation
             </button>
         )}
@@ -173,30 +298,23 @@ export default function AIAssistantPage() {
             <div className="ai-icon">✦</div>
             <h2>Ask MetricMind</h2>
             <p>
-            Ask a business question and explore sample insights and
-            visualizations.
+            Ask a business question and explore insights and visualizations
+            from the backend.
             </p>
 
             <div className="example-questions">
-            <button onClick={() => setQuestion(defaultQuestion)}>
-                {defaultQuestion}
-            </button>
-
-            <button
-                onClick={() =>
-                setQuestion("Which category generated the highest profit?")
-                }
-            >
-                Which category generated the highest profit?
-            </button>
-
-            <button
-                onClick={() =>
-                setQuestion("What were our top performing regions?")
-                }
-            >
-                What were our top performing regions?
-            </button>
+            {[
+                defaultQuestion,
+                "Which category generated the highest profit?",
+                "What were our top performing regions?",
+            ].map((example) => (
+                <button
+                key={example}
+                onClick={() => setQuestion(example)}
+                >
+                {example}
+                </button>
+            ))}
             </div>
         </div>
 
@@ -210,7 +328,7 @@ export default function AIAssistantPage() {
         <div className="chat-history">
             {messages.map((message, index) => {
             const chartType =
-                chartTypes[message.id] || message.response.chart.chart_type;
+                chartTypes[message.id] ?? message.response.chart.chart_type;
 
             const chartConfig: ChartConfig = {
                 ...message.response.chart,
@@ -222,12 +340,14 @@ export default function AIAssistantPage() {
                 <div className="user-question">
                     <div className="chat-message-heading">
                     <span className="chat-avatar user-avatar">You</span>
+
                     <div>
                         <strong>You</strong>
                         <span className="chat-timestamp">
                         {message.timestamp}
                         </span>
                     </div>
+
                     <span className="question-number">
                         Question {index + 1}
                     </span>
@@ -239,13 +359,15 @@ export default function AIAssistantPage() {
                 <div className="ai-answer">
                     <div className="chat-message-heading">
                     <span className="chat-avatar ai-avatar">✦</span>
+
                     <div>
-                        <strong>MetricMind AI</strong>
+                        <strong>MetricMind</strong>
                         <span className="chat-timestamp">
                         {message.timestamp}
                         </span>
                     </div>
-                    <span className="demo-label">Sample response</span>
+
+                    <span className="demo-label">Backend response</span>
                     </div>
 
                     <p>{message.response.answer}</p>
@@ -262,32 +384,32 @@ export default function AIAssistantPage() {
                     <div className="ai-dynamic-chart">
                     <div className="chart-controls">
                         <button
+                        className={
+                            chartType === "line"
+                            ? "chart-button active"
+                            : "chart-button"
+                        }
                         onClick={() =>
                             setChartTypes((previous) => ({
                             ...previous,
                             [message.id]: "line",
                             }))
                         }
-                        className={
-                            chartType === "line"
-                            ? "chart-button active"
-                            : "chart-button"
-                        }
                         >
                         Line Chart
                         </button>
 
                         <button
+                        className={
+                            chartType === "bar"
+                            ? "chart-button active"
+                            : "chart-button"
+                        }
                         onClick={() =>
                             setChartTypes((previous) => ({
                             ...previous,
                             [message.id]: "bar",
                             }))
-                        }
-                        className={
-                            chartType === "bar"
-                            ? "chart-button active"
-                            : "chart-button"
                         }
                         >
                         Bar Chart
@@ -329,34 +451,28 @@ export default function AIAssistantPage() {
 
                     {showSQL === message.id && (
                     <div className="sql-preview">
-                        <h3>Sample SQL Preview</h3>
+                        <h3>SQL Preview</h3>
                         <pre>
-{`SELECT
-    region,
-    SUM(sales) AS revenue,
-    SUM(profit) AS profit
-FROM sales
-GROUP BY region
-ORDER BY revenue DESC;`}
+                        {sqlResponses[message.id] ??
+                            "The backend did not return SQL for this response."}
                         </pre>
                     </div>
                     )}
 
                     {showAPI === message.id && (
                     <div className="api-preview">
-                        <h3>Illustrative API Request</h3>
+                        <h3>API Request</h3>
                         <pre>
-{JSON.stringify(
-    {
-    question: message.question,
-    demo: true,
-    metrics: message.response.chart.metrics,
-    },
-    null,
-    2
-)}
+                        {JSON.stringify(
+                            {
+                            method: "POST",
+                            endpoint: "/api/chat",
+                            body: { question: message.question },
+                            },
+                            null,
+                            2
+                        )}
                         </pre>
-                        <p>This is a frontend preview only. No API request is sent.</p>
                     </div>
                     )}
                 </div>
@@ -364,6 +480,8 @@ ORDER BY revenue DESC;`}
             );
             })}
         </div>
+
+        {error && <p role="alert">{error}</p>}
 
         <div className="ai-input-area">
             <textarea
@@ -376,14 +494,19 @@ ORDER BY revenue DESC;`}
                 !event.nativeEvent.isComposing
                 ) {
                 event.preventDefault();
-                handleAsk();
+                void handleAsk();
                 }
             }}
             placeholder="Ask a question about your business data..."
             rows={3}
+            disabled={loading}
             />
-        <button onClick={handleAsk} disabled={!question.trim()}>
-            Ask MetricMind
+
+            <button
+            onClick={() => void handleAsk()}
+            disabled={!question.trim() || loading}
+            >
+            {loading ? "Loading..." : "Ask MetricMind"}
             </button>
 
             <p className="chat-input-hint">
