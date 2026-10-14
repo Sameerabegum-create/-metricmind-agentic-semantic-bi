@@ -1,8 +1,13 @@
-﻿import streamlit as st
+﻿
+import os
+
+import streamlit as st
 import pandas as pd
 import requests
 
 st.set_page_config(page_title="MetricMind BI", page_icon="📊", layout="wide")
+
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000").rstrip("/")
 
 st.title("📊 MetricMind — Agentic Semantic BI")
 st.caption("Sales Analytics Dashboard | Powered by Python, Streamlit, dbt and DuckDB")
@@ -10,13 +15,13 @@ st.caption("Sales Analytics Dashboard | Powered by Python, Streamlit, dbt and Du
 st.subheader("🔌 Backend API Status")
 
 try:
-    response = requests.get("http://127.0.0.1:8000/health", timeout=3)
+    response = requests.get(f"{API_URL}/health", timeout=3)
     if response.ok:
         st.success("Backend API: Connected")
     else:
         st.warning("Backend API: Not responding correctly")
 except requests.RequestException:
-    st.warning("Backend API is offline. Start the FastAPI server to use this feature.")
+    st.warning("Backend API is offline. Check the API URL and ensure the backend is running.")
 
 st.subheader("💬 Ask MetricMind")
 
@@ -29,17 +34,23 @@ if st.button("Ask"):
     if question.strip():
         try:
             response = requests.get(
-                "http://127.0.0.1:8000/ask",
+                f"{API_URL}/ask",
                 params={"question": question},
-                timeout=10
+                timeout=30
             )
             if response.ok:
                 result = response.json()
                 st.info(str(result.get("answer", result)))
             else:
-                st.error(response.json().get("detail", "Could not answer that question."))
+                try:
+                    detail = response.json().get(
+                        "detail", "Could not answer that question."
+                    )
+                except ValueError:
+                    detail = "Could not answer that question."
+                st.error(str(detail))
         except requests.RequestException:
-            st.error("Could not connect to the backend. Check that the API server is running.")
+            st.error("Could not connect to the backend. Check the API URL and server.")
     else:
         st.warning("Please enter a question.")
 
@@ -51,6 +62,7 @@ def load_data():
     df["margin"] = df["revenue"] - df["cost"]
     return df
 
+
 try:
     df = load_data()
 except Exception as e:
@@ -58,12 +70,16 @@ except Exception as e:
     st.stop()
 
 st.sidebar.header("Dashboard Filters")
+
 countries = st.sidebar.multiselect(
-    "Select Country", sorted(df["country"].dropna().unique()),
+    "Select Country",
+    sorted(df["country"].dropna().unique()),
     default=sorted(df["country"].dropna().unique())
 )
+
 products = st.sidebar.multiselect(
-    "Select Product", sorted(df["product"].dropna().unique()),
+    "Select Product",
+    sorted(df["product"].dropna().unique()),
     default=sorted(df["product"].dropna().unique())
 )
 

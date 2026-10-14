@@ -7,3 +7,5 @@ logs/
 dbt_packages/
 
 .env
+
+api_backup.py
