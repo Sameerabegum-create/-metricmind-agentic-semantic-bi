@@ -1,15 +1,23 @@
 ﻿from pathlib import Path
+import os
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from google import genai
+
+load_dotenv()
 
 app = FastAPI(
     title="MetricMind API",
-    description="Sales analytics API for MetricMind Semantic BI",
-    version="1.0.0",
+    description="Sales analytics API with Gemini-powered question answering",
+    version="2.0.0",
 )
 
 DATA_FILE = Path(__file__).parent / "seeds" / "sales.csv"
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
 
 
 def load_sales():
@@ -17,6 +25,18 @@ def load_sales():
         raise HTTPException(status_code=500, detail="Sales CSV file not found.")
 
     df = pd.read_csv(DATA_FILE)
+
+    required = {"order_id", "product", "country", "revenue", "cost"}
+    missing = required - set(df.columns)
+    if missing:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Sales CSV is missing columns: {', '.join(sorted(missing))}",
+        )
+
+    df["revenue"] = pd.to_numeric(df["revenue"], errors="coerce")
+    df["cost"] = pd.to_numeric(df["cost"], errors="coerce")
+    df = df.dropna(subset=["revenue", "cost"])
     df["margin"] = df["revenue"] - df["cost"]
     return df
 
@@ -79,66 +99,80 @@ def sales_by_country():
     return result.to_dict(orient="records")
 
 
-
 @app.get("/ask")
 def ask(question: str):
-    df = load_sales()
-    q = question.lower().strip()
-
-    if not q:
+    if not question.strip():
         raise HTTPException(status_code=400, detail="Please enter a question.")
 
-    if "highest" in q or "most" in q:
-        if "profit" in q or "margin" in q:
-            result = df.groupby("product")["margin"].sum()
-            product = result.idxmax()
-            return {
-                "question": question,
-                "answer": f"{product} has the highest profit: {result.max():,.2f}.",
-                "source": "sales.csv",
-            }
-        if "revenue" in q:
-            result = df.groupby("product")["revenue"].sum()
-            product = result.idxmax()
-            return {
-                "question": question,
-                "answer": f"{product} has the highest revenue: {result.max():,.2f}.",
-                "source": "sales.csv",
-            }
+    if client is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini is not configured. Set GEMINI_API_KEY in your .env file.",
+        )
 
-    if "country" in q and "revenue" in q:
-        result = df.groupby("country")["revenue"].sum().to_dict()
-        return {"question": question, "answer": result, "source": "sales.csv"}
+    df = load_sales()
 
-    if "revenue" in q:
+    # Give the model aggregated facts from the real dataset.
+    metrics_data = {
+        "total_records": int(len(df)),
+        "total_orders": int(df["order_id"].nunique()),
+        "total_revenue": round(float(df["revenue"].sum()), 2),
+        "total_cost": round(float(df["cost"].sum()), 2),
+        "total_profit": round(float(df["margin"].sum()), 2),
+        "revenue_by_product": {
+            str(k): round(float(v), 2)
+            for k, v in df.groupby("product")["revenue"].sum().items()
+        },
+        "profit_by_product": {
+            str(k): round(float(v), 2)
+            for k, v in df.groupby("product")["margin"].sum().items()
+        },
+        "revenue_by_country": {
+            str(k): round(float(v), 2)
+            for k, v in df.groupby("country")["revenue"].sum().items()
+        },
+    }
+
+    prompt = f"""
+You are MetricMind, a sales analytics assistant.
+Answer the user's question using only the verified dataset facts below.
+Do not invent figures or claim to have data that is not provided.
+If the question cannot be answered from these facts, explain the limitation.
+Keep the answer clear and concise.
+Use Indian rupees (₹) for currency values when appropriate.
+
+Verified dataset facts:
+{metrics_data}
+
+User question:
+{question}
+"""
+
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=prompt,
+        )
+        answer = (response.text or "").strip()
+        if not answer:
+            raise HTTPException(
+                status_code=502,
+                detail="Gemini returned an empty response. Please try again.",
+            )
+
         return {
             "question": question,
-            "answer": f"Total revenue is {df['revenue'].sum():,.2f}.",
+            "answer": answer,
             "source": "sales.csv",
+            "powered_by": "Google Gemini",
         }
+    except HTTPException:
+        raise
 
-    if "profit" in q or "margin" in q:
-        return {
-            "question": question,
-            "answer": f"Total profit is {df['margin'].sum():,.2f}.",
-            "source": "sales.csv",
-        }
+    except Exception as exc:
+        print(f"Gemini error ({type(exc).__name__}): {exc}")
+        raise HTTPException(
+            status_code=502,
+            detail="Gemini request failed. Check the backend terminal for details.",
+        )
 
-    if "cost" in q:
-        return {
-            "question": question,
-            "answer": f"Total cost is {df['cost'].sum():,.2f}.",
-            "source": "sales.csv",
-        }
-
-    if "order" in q:
-        return {
-            "question": question,
-            "answer": f"Total unique orders: {df['order_id'].nunique()}.",
-            "source": "sales.csv",
-        }
-
-    raise HTTPException(
-        status_code=400,
-        detail="Try asking about revenue, profit, cost, orders, or highest-revenue/profit product.",
-    )
