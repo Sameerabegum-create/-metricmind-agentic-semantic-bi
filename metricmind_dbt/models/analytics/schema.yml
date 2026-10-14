@@ -28,9 +28,13 @@ models:
 
       - name: profit
         description: "Profit generated from the order line."
+        tests:
+          - not_null
 
       - name: quantity
         description: "Quantity of products sold."
+        tests:
+          - not_null
 
       - name: country
         description: "Customer country."
