@@ -1,4 +1,4 @@
-version: 2
+﻿version: 2
 
 models:
   - name: fct_sales
@@ -23,6 +23,8 @@ models:
 
       - name: sales
         description: "Sales revenue for the order line."
+        tests:
+          - not_null
 
       - name: profit
         description: "Profit generated from the order line."
